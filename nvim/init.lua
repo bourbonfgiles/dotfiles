@@ -8,6 +8,9 @@ vim.g.mapleader = " "
 -- Enable 24-bit color
 vim.opt.termguicolors = true
 
+-- Use system clipboard
+vim.opt.clipboard = "unnamedplus"
+
 -- Packer Bootstrap
 -- Function to ensure Packer is installed
 local ensure_packer = function()
