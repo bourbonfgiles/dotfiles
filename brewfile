@@ -1,0 +1,51 @@
+# Brewfile
+
+# Taps: Additional repositories for Homebrew packages
+tap "azure/kubelogin"  # Azure kubelogin
+tap "cloudflare/cloudflare"  # Cloudflare tools
+tap "homebrew/bundle"  # Homebrew bundle
+tap "jandedobbeleer/oh-my-posh"  # Oh My Posh themes
+tap "mk-5/mk-5"  # MK-5 tools
+
+# Brews: Packages to install
+brew "unzip"  # Utility to extract compressed files
+brew "python@3.13"  # Python programming language
+brew "node"  # Node.js runtime
+brew "bash-language-server"  # Language server for Bash
+brew "bat"  # Enhanced cat command with syntax highlighting
+brew "curl"  # Command-line tool for transferring data with URLs
+brew "curlie"  # Curl for the terminal with an interface
+brew "dockerfile-language-server"  # Language server for Dockerfiles
+brew "dockly"  # Interactive terminal UI for managing Docker containers
+brew "eza"  # Modern replacement for 'ls'
+brew "fzf"  # Command-line fuzzy finder
+brew "git"  # Version control system
+brew "go"  # Go programming language
+brew "helm"  # Kubernetes package manager
+brew "helm-ls"  # Language server for Helm
+brew "helmfile"  # Deploy Kubernetes Helm Charts
+brew "htop"  # Interactive process viewer
+brew "ipcalc"  # IP address calculator
+brew "jq"  # Command-line JSON processor
+brew "k9s"  # Kubernetes CLI to manage clusters
+brew "kubecm"  # Kubernetes context manager
+brew "kubelogin"  # Kubernetes authentication helper
+brew "kubernetes-cli"  # Kubernetes command-line tool
+brew "lazydocker"  # Simple terminal UI for Docker
+brew "lazygit"  # Simple terminal UI for Git commands
+brew "make"  # Build automation tool
+brew "neovim"  # Hyperextensible Vim-based text editor
+brew "opentofu"  # Open-source Terraform alternative
+brew "pre-commit"  # Framework for managing and maintaining multi-language pre-commit hooks
+brew "ripgrep"  # Line-oriented search tool
+brew "rust"  # Rust programming language
+brew "terraform"  # Infrastructure as code tool
+brew "terraform-docs"  # Generate documentation for Terraform modules
+brew "terraform-ls"  # Language server for Terraform
+brew "typescript"  # Typed superset of JavaScript
+brew "yaml-language-server"  # Language server for YAML
+brew "yank"  # Yank terminal output to clipboard
+brew "yarn"  # JavaScript package manager
+brew "cloudflare/cloudflare/cf-terraforming"  # Terraforming tool for Cloudflare
+brew "jandedobbeleer/oh-my-posh/oh-my-posh"  # Oh My Posh prompt theme engine
+brew "mk-5/mk-5/fjira"  # FJIRA tool from MK-5
