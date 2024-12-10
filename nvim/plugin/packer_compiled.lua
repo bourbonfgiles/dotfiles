@@ -74,19 +74,27 @@ end
 time([[try_loadstring definition]], false)
 time([[Defining packer_plugins]], true)
 _G.packer_plugins = {
+  ["dracula.nvim"] = {
+    loaded = true,
+    path = "/home/giles/.local/share/nvim/site/pack/packer/start/dracula.nvim",
+    url = "https://github.com/Mofiqul/dracula.nvim"
+  },
   ["mini.icons"] = {
     loaded = true,
     path = "/home/giles/.local/share/nvim/site/pack/packer/start/mini.icons",
     url = "https://github.com/echasnovski/mini.icons"
   },
+  ["nvim-lspconfig"] = {
+    loaded = true,
+    path = "/home/giles/.local/share/nvim/site/pack/packer/start/nvim-lspconfig",
+    url = "https://github.com/neovim/nvim-lspconfig"
+  },
   ["nvim-tree.lua"] = {
-    config = { "\27LJ\2\nƒ\3\0\0\5\0\17\0\0216\0\0\0'\2\1\0B\0\2\0029\0\2\0005\2\3\0005\3\4\0=\3\5\0025\3\6\0=\3\a\0025\3\b\0=\3\t\0025\3\n\0004\4\0\0=\4\v\3=\3\f\0025\3\14\0005\4\r\0=\4\15\3=\3\16\2B\0\2\1K\0\1\0\factions\14open_file\1\0\1\14open_file\0\1\0\1\18resize_window\2\ffilters\vcustom\1\0\2\vcustom\0\rdotfiles\1\bgit\1\0\2\venable\2\vignore\1\tview\1\0\2\nwidth\3\30\tside\tleft\24update_focused_file\1\0\2\venable\2\15update_cwd\2\1\0\b\18disable_netrw\2\bgit\0\ffilters\0\factions\0\tview\0\24update_focused_file\0\15update_cwd\2\17hijack_netrw\2\nsetup\14nvim-tree\frequire\0" },
     loaded = true,
     path = "/home/giles/.local/share/nvim/site/pack/packer/start/nvim-tree.lua",
     url = "https://github.com/nvim-tree/nvim-tree.lua"
   },
   ["nvim-treesitter"] = {
-    config = { "\27LJ\2\nŒ\2\0\0\4\0\b\0\v6\0\0\0'\2\1\0B\0\2\0029\0\2\0005\2\4\0005\3\3\0=\3\5\0025\3\6\0=\3\a\2B\0\2\1K\0\1\0\14highlight\1\0\2\venable\2&additional_vim_regex_highlighting\1\21ensure_installed\1\0\2\21ensure_installed\0\14highlight\0\1\f\0\0\14terraform\bhcl\tyaml\tjson\thelm\tbash\15dockerfile\rmarkdown\ttoml\vpython\blua\nsetup\28nvim-treesitter.configs\frequire\0" },
     loaded = true,
     path = "/home/giles/.local/share/nvim/site/pack/packer/start/nvim-treesitter",
     url = "https://github.com/nvim-treesitter/nvim-treesitter"
@@ -104,14 +112,6 @@ _G.packer_plugins = {
 }
 
 time([[Defining packer_plugins]], false)
--- Config for: nvim-tree.lua
-time([[Config for nvim-tree.lua]], true)
-try_loadstring("\27LJ\2\nƒ\3\0\0\5\0\17\0\0216\0\0\0'\2\1\0B\0\2\0029\0\2\0005\2\3\0005\3\4\0=\3\5\0025\3\6\0=\3\a\0025\3\b\0=\3\t\0025\3\n\0004\4\0\0=\4\v\3=\3\f\0025\3\14\0005\4\r\0=\4\15\3=\3\16\2B\0\2\1K\0\1\0\factions\14open_file\1\0\1\14open_file\0\1\0\1\18resize_window\2\ffilters\vcustom\1\0\2\vcustom\0\rdotfiles\1\bgit\1\0\2\venable\2\vignore\1\tview\1\0\2\nwidth\3\30\tside\tleft\24update_focused_file\1\0\2\venable\2\15update_cwd\2\1\0\b\18disable_netrw\2\bgit\0\ffilters\0\factions\0\tview\0\24update_focused_file\0\15update_cwd\2\17hijack_netrw\2\nsetup\14nvim-tree\frequire\0", "config", "nvim-tree.lua")
-time([[Config for nvim-tree.lua]], false)
--- Config for: nvim-treesitter
-time([[Config for nvim-treesitter]], true)
-try_loadstring("\27LJ\2\nŒ\2\0\0\4\0\b\0\v6\0\0\0'\2\1\0B\0\2\0029\0\2\0005\2\4\0005\3\3\0=\3\5\0025\3\6\0=\3\a\2B\0\2\1K\0\1\0\14highlight\1\0\2\venable\2&additional_vim_regex_highlighting\1\21ensure_installed\1\0\2\21ensure_installed\0\14highlight\0\1\f\0\0\14terraform\bhcl\tyaml\tjson\thelm\tbash\15dockerfile\rmarkdown\ttoml\vpython\blua\nsetup\28nvim-treesitter.configs\frequire\0", "config", "nvim-treesitter")
-time([[Config for nvim-treesitter]], false)
 
 _G._packer.inside_compile = false
 if _G._packer.needs_bufread == true then
