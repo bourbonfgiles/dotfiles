@@ -8,6 +8,7 @@ SAVEHIST=20000  # Set the number of history entries to save
 alias ll='ls -alF'  # List files in long format with file type indicators
 alias ls='eza'  # Use 'eza' as the default 'ls' command
 alias history='bat ~/.histfile'  # Display history file with 'bat' for syntax highlighting
+alias lvim='/home/giles/.local/bin/lvim'
 
 # Initialize Homebrew and Oh My Posh
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"  # Initialize Homebrew
