@@ -37,4 +37,4 @@ If you run into issues with `libgit2.so.1.8`, just curl and compile the version 
   
 Configure the eza theme: `ln -sf "/home/giles/repos/personal/eza-themes/themes/tokyonight.yml" ~/.config/eza/theme.yml`  
   
-Gr<F15>ab anything on the GUI.  
+Grab anything on the GUI.  
