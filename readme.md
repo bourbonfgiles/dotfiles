@@ -18,6 +18,22 @@ Making use of Nix package manager to do the bulk of the work:
   `home-manager switch` #Grabs your .conf  
   
 Once nixpgkgs has installed the contents of home.nix, copy the .config files for `LunarVim`, `Starship`, and `NuShell`.  
+
+To get `NuShell` plug-ins working, perform the following:  
+```
+ [ nu_plugin_inc  
+  nu_plugin_polars  
+  nu_plugin_gstat  
+  nu_plugin_formats  
+  nu_plugin_query  
+] | each { cargo install $in --locked } | ignore
+```
+
+Once done, check in `~/.cargo/bin/`  
+
+From here you can run `plugin add ~/.cargo/bin/nu_plugin_gstat`.  
+
+If you run into issues with `libgit2.so.1.8`, just curl and compile the version showing in the error.  
   
 Configure the eza theme: `ln -sf "/home/giles/repos/personal/eza-themes/themes/tokyonight.yml" ~/.config/eza/theme.yml`  
   
