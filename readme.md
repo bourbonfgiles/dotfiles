@@ -3,8 +3,12 @@
 Personal repo (open to all), for setting up Linux or Mac to be a relatively reproduceable environment for DevOps tooling.  
 
 Structure:  
-    .config  - Modern .config files for `LunarVim`, `nixpgkgs`, `Starship` and `NuShell`  
-    nvim     - Own customised version of `neovim`. Superseded by `LunarVim`.  
+    .config  - Modern .config files for `neovim`, `LunarVim`, `nixpgkgs`, `Starship` and `NuShell`  
+      lvim    - Superseded by `LunarVim`.  
+      nushell - NuShell configuration  
+        conig.nu - nushell config
+        env.nu   - env vars for nushell
+      nvim    - Own customised version of `neovim`.  
     wsl      - Config for Ubuntu on WSL.  
     .zshrc   - For ZSH, now superseded by NuShell.  
     brewfile - For Homebrew, now superseded by nixpgkgs.  
