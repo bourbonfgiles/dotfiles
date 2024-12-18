@@ -6,8 +6,8 @@ Structure:
     .config  - Modern .config files for `neovim`, `LunarVim`, `nixpgkgs`, `Starship` and `NuShell`  
       lvim    - Superseded by `LunarVim`.  
       nushell - NuShell configuration  
-        conig.nu - nushell config
-        env.nu   - env vars for nushell
+        conig.nu - nushell config  
+        env.nu   - env vars for nushell  
       nvim    - Own customised version of `neovim`.  
     wsl      - Config for Ubuntu on WSL.  
     .zshrc   - For ZSH, now superseded by NuShell.  
