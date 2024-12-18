@@ -14,12 +14,14 @@ Structure:
     brewfile - For Homebrew, now superseded by nixpgkgs.  
 
 Making use of Nix package manager to do the bulk of the work:  
-  ```xcode-select --install   
+  ```
+  xcode-select --install   
   sh <(curl -L https://nixos.org/nix/install)   
   nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager  
   nix-channel --update  
-  nix-shell '<home-manager>' -A install  
-  home-manager switch` #Grabs your .conf  ``` 
+  nix-shell <home-manager> -A install  
+  home-manager switch #Grabs your .conf  
+  ``` 
   
 Once nixpgkgs has installed the contents of home.nix, copy the .config files for `LunarVim`, `Starship`, and `NuShell`.  
 
