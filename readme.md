@@ -5,21 +5,21 @@ Personal repo (open to all), for setting up Linux or Mac to be a relatively repr
 Structure:  
     .config  - Modern .config files for `neovim`, `LunarVim`, `nixpgkgs`, `Starship` and `NuShell`  
       lvim    - Superseded by `LunarVim`.  
-      nushell - NuShell configuration  
-        conig.nu - nushell config  
-        env.nu   - env vars for nushell  
+      nushell - `NuShell` configuration  
+        conig.nu - `NuShell` config  
+        env.nu   - `NuShell` env vars  
       nvim    - Own customised version of `neovim`.  
     wsl      - Config for Ubuntu on WSL.  
     .zshrc   - For ZSH, now superseded by NuShell.  
     brewfile - For Homebrew, now superseded by nixpgkgs.  
 
 Making use of Nix package manager to do the bulk of the work:  
-  `xcode-select --install`  
-  `sh <(curl -L https://nixos.org/nix/install)`  
-  `nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager`  
-  `nix-channel --update`  
-  `nix-shell '<home-manager>' -A install`  
-  `home-manager switch` #Grabs your .conf  
+  ```xcode-select --install   
+  sh <(curl -L https://nixos.org/nix/install)   
+  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager  
+  nix-channel --update  
+  nix-shell '<home-manager>' -A install  
+  home-manager switch` #Grabs your .conf  ``` 
   
 Once nixpgkgs has installed the contents of home.nix, copy the .config files for `LunarVim`, `Starship`, and `NuShell`.  
 
