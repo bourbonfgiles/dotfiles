@@ -1,0 +1,479 @@
+exit
+exit
+ll
+ls
+ll
+cat .zshrc
+ll 
+ls
+ll
+ls
+ll
+lvim config.nu
+ll
+ls
+rm Brewfile
+ll
+ls
+vim
+vim config.nu
+ls
+cd 
+ls
+cd ~/
+ls
+ls -ltrh
+ls
+eza
+cd ~/.config/
+ll
+ls
+cd nushell/
+ls
+vim config.nu
+cat config.nu
+cat config.nu | find "history file"
+cat config.nu | find "history"
+history
+ls
+cat config.nu | find "history"
+cat config.nu | find "history max"
+cat config.nu | pbcopy
+ls
+vim config.nu
+vim config.nu | pbcopy
+vim config.nu
+cd .config/nushell/
+ll
+ls
+cat config.nu
+cat config.nu | head
+ll
+help aliases
+ll
+lvim
+which eza
+brew list
+let-env PATH = ($nu.env.PATH | append /home/linuxbrew/.linuxbrew/bin)
+ll
+cd 
+ls
+cat brewfile
+vim brewfile
+bat brewfile
+cat brewfile
+vim brewfile
+cat brewfile
+vim brewfile
+cat brewfile
+vim brewfile
+cat brewfile
+cat brewfile | to table
+cd repos/personal/
+git clone https://github.com/doctorfree/nvim-lazyman.git
+cd nvim-lazyman/
+./install.sh
+ll
+ls
+cd ../
+ll
+ls
+cd nvim-lazyman/
+ls
+cd ~/repos/personal/dotfiles/
+ls
+lvim brewfile
+exit
+./lazyman.sh
+lazyman
+lvim
+vim
+nvim
+lvim
+nvim --version
+lvim --version
+ll /home/giles/.local/bin/lvim
+ls /home/giles/.local/bin/lvim
+nix-env -iA nixpkgs.neovim
+nix
+sudo apt update
+curl -L https://nixos.org/nix/install | sh
+. ~/.nix-profile/etc/profile.d/nix.sh
+source-env ~/.nix-profile/etc/profile.d/nix.sh
+nushell
+sh <(curl -L https://nixos.org/nix/install) --daemon
+su sh <(curl -L https://nixos.org/nix/install) --daemon
+nix-env -iA nixpkgs.nushell
+alias install_nu = nix-env -iA nixpkgs.nushell
+config nu
+vim ~/.config/nushell/config.nu
+exit
+nu
+nix
+nu
+install_nu
+ll
+history
+lazyman
+help aliases 
+cpe
+k9s
+echo $nu.path
+cd 
+;;
+ls
+echo $nu.path
+exit
+exit
+echo $nu.path
+bat
+cat
+nix-env -e nushell
+which nix-env
+echo $nu.path
+echo $nu.env-path
+env
+vim 
+vim ~/.config/nushell/config.nu
+source ~/.config/nushell/config.nu
+vim ~/.config/nushell/config.nu
+source ~/.config/nushell/config.nu
+ll
+ls
+source ~/.config/nushell/config.nu
+vim ~/.config/nushell/config.nu
+source ~/.config/nushell/config.nu
+brew install nushell
+chsh -s /bin/zsh
+echo $SHELL
+echo $env.SHELL
+brew uninstall nushell
+config reset
+config reset -nu
+config reset --nu
+config reset --env
+ls ~/.config/nushell/
+cat ~/.config/nushell/config.nu
+ls ~/.config/nushell/
+rm /home/giles/.config/nushell/oldconfig-2024-12-15-13-24-40.nu
+rm /home/giles/.config/nushell/oldconfig-2024-12-15-13-24-54.nu
+rm /home/giles/.config/nushell/oldenv-2024-12-15-13-24-40.nu
+ls ~/.config/nushell/
+rm /home/giles/.config/nushell/oldenv-2024-12-15-13-25-08.nu
+ll
+rm /home/giles/.config/nushell/oldenv-2024-12-15-13-25-08.nu
+ls ~/.config/nushell/
+cd ~/.config/nushell/
+ll env.nu
+cat env.nu
+ll
+ls
+ll
+terraform
+opentofu
+help aliases 
+chsh -s /bin/zsh
+ll
+ls
+chsh -s /bin/zsh
+exit
+ll
+ls
+ll
+cat ~/.config/nushell/config.nu
+ll
+ls
+lvim
+vim ~/.config/nushell/config.nu
+source ~/.config/nushell/config.nu
+echo $env.PATH
+ls
+vim ~/.config/nushell/config.nu
+ll
+ls
+vim ~/.config/nushell/config.nu
+ll
+ls
+exit
+exit
+ll
+ls
+chsh -s /bin/zsh
+exit
+zoxide
+cat 
+cat ~/.config/nushell/config.nu
+vim ~/.config/nushell/config.nu
+cd /home/linuxbrew/
+ll
+ls
+cd ../
+ll
+ls
+rm linuxbrew/
+cd linuxbrew/
+ls
+ls -all
+cat .linuxbrew/
+cd 
+ll
+ls
+cd /home/linuxbrew/
+ll
+ls
+ls -all
+cd .linuxbrew/
+ls
+cd 
+ls
+cd .config/
+cd nushell/
+ls
+vim config.nu
+exit
+vim ~/.config/nushell/config.nu
+exit
+vim /home/giles/.config/nushell/config.nu
+exit
+vim /home/giles/.config/nushell/config.nu
+exit
+vim /home/giles/.config/nushell/config.nu
+exit
+vim /home/giles/.config/nushell/config.nu
+zoxide init nushell | save -f ~/.zoxide.nu
+exit
+source ~/.zoxide.nu
+$nu.env-path
+vim /home/giles/.config/nushell/env.nu
+exit
+z
+zoxide
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+vim /home/giles/.config/nushell/env.nu
+exit
+$nu.config-path
+vim /home/giles/.config/nushell/config.nu
+$nu.env-path
+vim /home/giles/.config/nushell/env.nu
+exit
+vim /home/giles/.config/nushell/config.nu
+chsh -s /bin/zsh
+exit
+history
+vim /home/giles/.config/nushell/config.nu
+vim ~/.config/
+lvim /home/giles/.config/nvim-Lazyman/.lazymanrc
+bat /home/giles/.config/nvim-Lazyman/.lazymanrc
+bat /home/giles/.config/nvim-Lazyman/.lazymanrc | pbcopy
+brew list
+xclip
+bat /home/giles/.config/nvim-Lazyman/.lazymanrc | xclip
+bat /home/giles/.config/nvim-Lazyman/.lazymanrc | xclip -selection primary
+xclip -selection clipboard < 
+xclip -selection clipboard < ~/.config/nvim-Lazyman/.lazymanrc
+cd ~/.config/nvim-Lazyman/
+ll
+ls
+ls -all
+xclip -selection clipboard < .lazymanrc
+aliases
+alias
+source ~/.config/nushell/config.nu
+cat ~/.config/nushell/config.nu
+ll
+kubectl
+kubectl get :q
+:q
+exit
+cat build.sh
+ll
+ls
+cd build/
+ls
+cd helm/
+ls
+cd templates/
+ls
+cat httproute.yaml
+bat httproute.yaml
+cd ~/
+ll
+ls
+lvim
+lvim ~/.config/nushell/config.nu
+ll
+lvim ~/.config/nushell/config.nu
+ll
+bat ~/.config/nushell/config.nu
+eza
+aliases
+alias
+help aliases
+nu --debug
+exit
+cat ~/.config/nushell/
+cat ~/.config/nushell/config.nu
+lvim ~/.config/nushell/config.nu
+ll
+ls
+ll
+ls
+ll
+ls
+ll
+ls
+cat ~/.config/nushell/config.nu
+bat ~/.config/nushell/config.nu
+brewbrew
+brew
+bat ~/.config/nushell/config.nu
+bat ~/.config/nushell/config.nu | pbcopy
+lvim ~/.config/nushell/config.nu
+bat ~/.config/nushell/config.nu | pbcopy
+bat ~/.config/nushell/config.nu
+kubectl get pods
+kubectl get pods -o json | from json
+opentofu
+tofu
+bat ~/.zshrc
+bat ~/.config/nushell/config.nu
+kubectl get pods
+starship
+cd ../
+ll
+cd pico.argo/
+ll
+ls
+cd repos/pico/
+ls
+ll
+ls
+gstat
+cargo
+cargo install nu_plugin_gstat
+register ~/.cargo/bin/nu_plugin_gstat
+plugin add ~/.cargo/bin/nu_plugin_gstat
+gstat
+install_plugin gstat
+cargo install nu_plugin_gstat --locked
+cd pico/
+gstat
+nu gstat
+register ~/.cargo/bin/nu_plugin_gstat
+gstat
+lvim ~/.config/nushell/config.nu
+gstat
+plugin list
+[ nu_plugin_inc<\n>  nu_plugin_polars<\n>  nu_plugin_gstat<\n>  nu_plugin_formats<\n>  nu_plugin_query<\n>] | each { cargo install $in --locked } | ignore
+gstat
+ll
+git status
+cd repos/gym/
+ll
+ls
+git status
+cd personal-trainers-api/
+git statys
+gstat
+plugin add ~/.cargo/bin/fd
+plugin add ~/.cargo/bin/
+plugin add ~/.cargo/bin/nu_plugin_gstat
+sudo apt install libgit2-dev
+plugin add ~/.cargo/bin/nu_plugin_gstat
+su plugin add ~/.cargo/bin/nu_plugin_gstat
+history
+sudo apt install libgit2-dev
+plugin add ~/.cargo/bin/nu_plugin_gstat
+gstat
+cargo install nu_plugin_gstat --locked
+plugin add ~/.cargo/bin/nu_plugin_gstat
+exit
+nu
+ll
+shell
+$SHELL
+$env.SHELL
+cd ~/repos/pdex/scalr-terraform/
+ll
+cd modules/
+ll
+cd ../
+ll
+cd scalr/
+ll
+bat main.tf
+bat ~/.zshrc
+bat ~/.config/
+bat ~/.config/nushell/config.nu
+lvim ~/.config/nushell/config.nu
+lvim ~/.config/starship.toml
+cd ~/repos/pdex/
+cd ch-shared-resources/
+ll
+cd ../
+cd group.sharediac.terraform/
+ll
+bat main.tf
+exit
+nu
+cd ~/
+ll
+exit
+nu
+exit
+nu
+exit
+nu
+lvim ~/.config/starship.toml
+bat ~/.config/starship.toml | pbcopy
+starship init nu | save ~/.config/starship.toml
+lvim ~/.config/nushell/config.nu
+exit
+nu
+lvim ~/.config/starship.toml
+lvim
+lvim ~/.config/starship.toml
+kubectl get pods -o json | from json
+:q
+ll
+ls
+history
+bat ~/.config/nushell/config.nu 
+bat ~/.config/nushell/config.nu | pbcopy 
+help
+ps | where cpu > 15
+ps | where cpu > 5
+ps | where cpu > 1
+ps | where cpu > 0
+brew --version
+which nu
+config set prompt "starship prompt"
+brew list starship 
+lvim ~/.config/nushell/env.nu
+cd repos/pico/
+ls
+cd pico
+ls
+history
+nushell
+source ~/.config/nushell/config.nu
+ls
+http get google.com
+http get http://google.com
+starship promot
+starship promt
+starship prompt
+ls
+cd ~
+pwd
+ls
+ls brewfile
+open brewfile
+cp brewfile 
+cp brewfile ~/repos/personal/dotfiles/
+ls ~/repos/personal/dotfiles/
+cat ~/repos/personal/dotfiles/readme.md 
+ls ~/repos/personal/dotfiles/nvim/
+ls ~/.config/
+cp ~/.config/nushell/ ~/repos/personal/dotfiles/
+cp ~/.config/nushell/ ~/repos/personal/dotfiles/ --r

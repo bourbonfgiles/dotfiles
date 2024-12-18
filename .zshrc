@@ -8,7 +8,6 @@ SAVEHIST=20000  # Set the number of history entries to save
 alias ll='eza'
 alias z='zoxide'
 alias history='bat ~/.histfile'  # Display history file with 'bat' for syntax highlighting
-alias lvim='/home/giles/.local/bin/lvim'
 
 # Initialize Homebrew and Oh My Posh
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"  # Initialize Homebrew
@@ -30,18 +29,12 @@ if command -v zoxide > /dev/null; then
   eval "$(zoxide init zsh)"
 fi
 
-eval "$(carapace _carapace)"
+eval "$(starship init zsh)"eval
 
-# Source the Lazyman shell initialization for aliases and nvims selector
-# shellcheck source=.config/nvim-Lazyman/.lazymanrc
-[ -f ~/.config/nvim-Lazyman/.lazymanrc ] && source ~/.config/nvim-Lazyman/.lazymanrc
-# Source the Lazyman .nvimsbind for nvims key binding
-# shellcheck source=.config/nvim-Lazyman/.nvimsbind
-[ -f ~/.config/nvim-Lazyman/.nvimsbind ] && source ~/.config/nvim-Lazyman/.nvimsbind
+eval "$(carapace _carapace)"
 
 # Uncomment the following line to start kubectl proxy for WSL with specific settings
 # kubectl proxy --port=8001 --reject-paths="^/api/./pods/./attach"
 
 echo "Sourced .zshrc"
 
-eval "$(starship init zsh)"eval
