@@ -1,10 +1,10 @@
 #!/bin/zsh
 
-# Function to install Nix and Home Manager
+# Function to install Nix and Home Manager on Ubuntu
 install_nix_and_home_manager() {
   echo "Installing Nix..."
   curl -L https://nixos.org/nix/install | sh
-  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+  . /home/$USER/.nix-profile/etc/profile.d/nix.sh
 
   echo "Installing Home Manager..."
   nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
