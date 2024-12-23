@@ -1,5 +1,3 @@
-# darwin/home.nix
-
 { config, pkgs, ... }:
 
 {
@@ -129,6 +127,25 @@
       script = ''
         chsh -s $(which nu)
       '';
+    };
+  };
+
+  # iTerm2 Quake mode configuration
+  programs.iterm2 = {
+    enable = true;
+    settings = {
+      "New Bookmarks" = [
+        {
+          "Guid" = "00000000-0000-0000-0000-000000000000";
+          "Name" = "Hotkey Window";
+          "Shortcut" = "Ctrl-`";
+          "Window Type" = "Hotkey";
+          "Screen" = "Screen with Cursor";
+          "Space" = "All Spaces";
+          "Style" = "Full-Width Top of Screen";
+          "Tab Bar" = true; # Enable tabs
+        }
+      ];
     };
   };
 }
