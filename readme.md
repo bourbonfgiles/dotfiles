@@ -28,9 +28,4 @@ install_nu_plugins
 
 if/fi statements determine if it's being sourced on Mac or Linux and adjust accordingly.  
 
-Once done, check in `~/.cargo/bin/`  
-
-From here you can run `plugin add ~/.cargo/bin/nu_plugin_gstat`.  
-If you run into issues with `libgit2.so.1.8`, just curl and compile the version showing in the error. 
-
 Once inside Neovim, handle LSP and linter installation using :LspInstall  

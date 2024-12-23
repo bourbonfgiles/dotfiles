@@ -118,6 +118,10 @@ install_nu_plugins() {
   for plugin in "${nu_plugins[@]}"; do
     cargo install "$plugin" --locked || { echo "Failed to install $plugin"; exit 1; }
   done
+ 
+  # Add plugins to Nushell
+  echo "Adding plugins to Nushell..."
+  nu -c 'for plugin in nu_plugin_inc nu_plugin_polars nu_plugin_gstat nu_plugin_formats nu_plugin_query { plugin add ~/.cargo/bin/$plugin }' || { echo "Failed to add plugins to Nushell"; exit 1; }
 }
 
 # Main script execution
