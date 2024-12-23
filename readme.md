@@ -17,13 +17,16 @@ Source this script and run `zsh ~/repos/personal/dotfiles/setup.sh`
 This will perform the following actions:   
 
 ```
-install_nix_and_home_manager   
 setup_git_and_ssh  
 clone_dotfiles  
+clone_eza_themes  
+install_astrovim  
 create_symlinks  
 apply_home_manager  
-install_nu_plugins  
+install_nu_plugins 
 ```  
+
+if/fi statements determine if it's being sourced on Mac or Linux and adjust accordingly.  
 
 Once done, check in `~/.cargo/bin/`  
 
