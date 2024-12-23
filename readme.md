@@ -2,17 +2,17 @@
 
 Personal repo (open to all), for setting up Linux or Mac to be a relatively reproduceable environment for DevOps tooling.  
 
+```
 Structure:  
     .config  - Modern .config files for `neovim`, `nixpgkgs`, `Starship` and `NuShell`  
       nushell - `NuShell` configuration  
-        conig.nu - `NuShell` config  
+        config.nu - `NuShell` config  
         env.nu   - `NuShell` env vars  
       nvim    - `AstroVim` with customisations.   
     wsl      - Config for `Ubuntu` on `WSL`.  
     .zshrc   - For ZSH, now superseded by `NuShell`.  
     brewfile - For `Homebrew`, now superseded by `nixpgkgs`.  
-
-LSP and linter installation in Neovim using :LspInstall  
+```
 
 Making use of Nix package manager to do the bulk of the work:  
   ```
@@ -21,10 +21,10 @@ Making use of Nix package manager to do the bulk of the work:
   nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager  
   nix-channel --update  
   nix-shell <home-manager> -A install  
-  home-manager switch #Grabs your .conf  
+  home-manager switch
   ``` 
-  
-Once nixpgkgs has installed the contents of home.nix, copy the .config files for `LunarVim`, `Starship`, and `NuShell`.  
+
+Run `zsh ~/repos/personal/dotfiles/setup.sh` in order to auth to git, gen an SSH key and create your config.
 
 To get `NuShell` plug-ins working, perform the following:  
 ```
@@ -39,9 +39,9 @@ To get `NuShell` plug-ins working, perform the following:
 Once done, check in `~/.cargo/bin/`  
 
 From here you can run `plugin add ~/.cargo/bin/nu_plugin_gstat`.  
-If you run into issues with `libgit2.so.1.8`, just curl and compile the version showing in the error.  
+If you run into issues with `libgit2.so.1.8`, just curl and compile the version showing in the error. 
+
+LSP and linter installation in Neovim using :LspInstall  
   
 Configure the eza theme:  
 `ln -sf "/home/giles/repos/personal/eza-themes/themes/tokyonight.yml" ~/.config/eza/theme.yml`  
-  
-Grab anything on the GUI.  
