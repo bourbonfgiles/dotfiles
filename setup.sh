@@ -1,6 +1,5 @@
 #!/bin/zsh
 
-
 # Function to install Nix and Home Manager
 install_nix_and_home_manager() {
   echo "Installing Nix..."
@@ -43,6 +42,12 @@ setup_git_and_ssh() {
 clone_dotfiles() {
   echo "Cloning dotfiles repository..."
   git clone https://github.com/bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles || { echo "Failed to clone repository"; exit 1; }
+}
+
+# Clone the eza-themes repository
+clone_eza_themes() {
+  echo "Cloning eza-themes repository..."
+  git clone https://github.com/eza-community/eza-themes.git ~/repos/personal/eza-themes || { echo "Failed to clone eza-themes repository"; exit 1; }
 }
 
 # Create symlinks using Stow
@@ -93,6 +98,7 @@ install_nu_plugins() {
 install_nix_and_home_manager
 setup_git_and_ssh
 clone_dotfiles
+clone_eza_themes
 create_symlinks
 apply_home_manager
 install_nu_plugins
