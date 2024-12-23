@@ -11,6 +11,7 @@
   home.packages = with pkgs; [
     bat
     carapace
+    cargo
     curl
     direnv
     dockly
