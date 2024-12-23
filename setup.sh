@@ -1,7 +1,7 @@
 #!/bin/zsh
 
-# Function to set up Git login
-setup_git() {
+# Function to set up Git and SSH keys
+setup_git_and_ssh() {
   echo "Setting up Git..."
   read "email?Enter your GitHub email: "
   read "username?Enter your GitHub username: "
@@ -11,10 +11,7 @@ setup_git() {
   git config --global push.autosetupremote true
 
   echo "Git configuration set."
-}
 
-# Function to set up SSH keys
-setup_ssh() {
   echo "Setting up SSH keys..."
   if [ ! -f ~/.ssh/id_ed25519 ]; then
     ssh-keygen -t ed25519 -C "$email"
@@ -52,9 +49,8 @@ apply_home_manager() {
 }
 
 # Main script execution
+setup_git_and_ssh
 clone_dotfiles
-setup_git
-setup_ssh
 create_symlinks
 apply_home_manager
 
