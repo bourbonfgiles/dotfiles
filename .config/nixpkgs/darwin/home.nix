@@ -1,151 +1,142 @@
-{ config, pkgs, ... }:
+#!/bin/zsh
 
-{
-  # Home Manager configuration
-  imports = [
-    <home-manager/nixos>
-  ];
+# Function to install Nix and Home Manager
+install_nix_and_home_manager() {
+  echo "Installing Nix..."
+  curl -L https://nixos.org/nix/install | sh
+  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
-  home.packages = with pkgs; [
-    bat
-    carapace
-    cargo
-    curl
-    direnv
-    dockly
-    eza
-    fzf
-    gh
-    git
-    glances
-    go
-    helm
-    helmfile
-    htop
-    ipcalc
-    jq
-    k9s
-    kubecm
-    kubernetes-cli
-    lazydocker
-    lazygit
-    lua
-    make
-    neovim
-    nodejs
-    nushell
-    opentofu
-    pre-commit
-    python3
-    ripgrep
-    rust
-    starship
-    stow
-    terraform
-    terraform-docs
-    tldr
-    typescript
-    unzip
-    yank
-    yarn
-    yazi
-    zip
-  ];
-
-  # Homebrew taps
-  homebrew.taps = [
-    "azure/kubelogin"
-    "cloudflare/cloudflare"
-    "homebrew/bundle"
-    "idoavrah/homebrew"
-    "jandedobbeleer/oh-my-posh"
-    "julien-cpsn/atac"
-    "mk-5/mk-5"
-    "vladimirvivien/oss-tools"
-  ];
-
-  # Homebrew packages managed via Nix
-  homebrew.packages = [
-    "azure/kubelogin/kubelogin"
-    "cloudflare/cloudflare/cf-terraforming"
-    "idoavrah/homebrew/tftui"
-    "jandedobbeleer/oh-my-posh/oh-my-posh"
-    "julien-cpsn/atac/atac"
-    "mk-5/mk-5/fjira"
-    "vladimirvivien/oss-tools/ktop"
-  ];
-
-  # macOS native apps
-  homebrew.casks = [
-    "alfred",
-    "docker",
-    "iterm2",
-    "signal",
-    "slack",
-    "spotify"
-  ];
-
-  # Create symlink for Alfred
-  home.activation = {
-    createAlfredSymlink = lib.mkAfter {
-      description = "Create symlink for Alfred";
-      script = ''
-        ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
-      '';
-    };
-  };
-
-  # Dock settings
-  programs.dock.enable = true;
-  programs.dock.settings = {
-    autohide = false;
-    magnification = true;
-    tilesize = 36;
-    largesize = 64;
-    orientation = "bottom";
-    persistent-apps = [
-      "Spotify",
-      "Safari",
-      "iTerm2",
-      "Docker",
-      "Calendar",
-      "Outlook",
-      "Teams"
-    ];
-  };
-
-  # Environment variables for iTerm2
-  home.sessionVariables = {
-    TERMINAL = "iterm2";
-    TERM_PROGRAM = "iTerm.app";
-  };
-
-  # Set Nushell as the default shell for iTerm2
-  home.activation = {
-    setNushellAsDefault = lib.mkAfter {
-      description = "Set Nushell as the default shell for iTerm2";
-      script = ''
-        chsh -s $(which nu)
-      '';
-    };
-  };
-
-  # iTerm2 Quake mode configuration
-  programs.iterm2 = {
-    enable = true;
-    settings = {
-      "New Bookmarks" = [
-        {
-          "Guid" = "00000000-0000-0000-0000-000000000000";
-          "Name" = "Hotkey Window";
-          "Shortcut" = "Ctrl-`";
-          "Window Type" = "Hotkey";
-          "Screen" = "Screen with Cursor";
-          "Space" = "All Spaces";
-          "Style" = "Full-Width Top of Screen";
-          "Tab Bar" = true; # Enable tabs
-        }
-      ];
-    };
-  };
+  echo "Installing Home Manager..."
+  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
+  nix-channel --update
+  nix-shell '<home-manager>' -A install
 }
+
+# Function to install Nix-Darwin and Home Manager
+install_nix_darwin_and_home_manager() {
+  echo "Installing Nix-Darwin..."
+  nix-build https://github.com/LnL7/nix-darwin/archive/master.tar.gz -A installer
+  ./result/bin/darwin-installer
+
+  echo "Installing Home Manager..."
+  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
+  nix-channel --update
+  nix-shell '<home-manager>' -A install
+}
+
+# Function to set up Git and SSH keys
+setup_git_and_ssh() {
+  echo "Setting up Git..."
+  read "email?Enter your GitHub email: "
+  read "username?Enter your GitHub username: "
+
+  git config --global user.email "$email"
+  git config --global user.name "$username"
+  git config --global push.autosetupremote true
+
+  echo "Git configuration set."
+
+  echo "Setting up SSH keys..."
+  if [ ! -f ~/.ssh/id_ed25519 ]; then
+    ssh-keygen -t ed25519 -C "$email"
+    eval "$(ssh-agent -s)"
+    ssh-add ~/.ssh/id_ed25519
+
+    echo "Copy the following SSH key to your GitHub account:"
+    cat ~/.ssh/id_ed25519.pub
+    read "dummy?Press Enter after adding the SSH key to GitHub..."
+  else
+    echo "SSH key already exists."
+  fi
+}
+
+# Clone the dotfiles repository
+clone_dotfiles() {
+  echo "Cloning dotfiles repository..."
+  git clone https://github.com/bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles || { echo "Failed to clone repository"; exit 1; }
+}
+
+# Clone the eza-themes repository
+clone_eza_themes() {
+  echo "Cloning eza-themes repository..."
+  git clone https://github.com/eza-community/eza-themes.git ~/repos/personal/eza-themes || { echo "Failed to clone eza-themes repository"; exit 1; }
+}
+
+# Install AstroVim
+install_astrovim() {
+  echo "Installing AstroVim..."
+
+  # Clone AstroVim template
+  git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
+
+  # Remove template's git connection
+  rm -rf ~/.config/nvim/.git
+}
+
+# Create symlinks using Stow
+create_symlinks() {
+  echo "Creating symlinks..."
+  cd ~/repos/personal/dotfiles || { echo "Failed to change directory"; exit 1; }
+  stow -t ~ nvim || { echo "Failed to stow nvim"; exit 1; }
+  stow -t ~ nushell || { echo "Failed to stow nushell"; exit 1; }
+  stow -t ~ starship || { echo "Failed to stow starship"; exit 1; }
+  stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
+
+  # macOS specific configuration
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Configuring eza theme for macOS..."
+    mkdir -p ~/Library/Application\ Support/eza
+    ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
+  else
+    echo "Configuring the eza theme..."
+    mkdir -p ~/.config/eza
+    ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/.config/eza/theme.yml || { echo "Failed to configure eza theme"; exit 1; }
+  fi
+}
+
+# Run Home Manager to apply the configuration
+apply_home_manager() {
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix..."
+    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  else
+    echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
+    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  fi
+}
+
+# Install Nu plugins
+install_nu_plugins() {
+  echo "Installing Nu plugins..."
+  nu_plugins=(
+    nu_plugin_inc
+    nu_plugin_polars
+    nu_plugin_gstat
+    nu_plugin_formats
+    nu_plugin_query
+  )
+  for plugin in "${nu_plugins[@]}"; do
+    cargo install "$plugin" --locked || { echo "Failed to install $plugin"; exit 1; }
+  done
+ 
+  # Add plugins to Nushell
+  echo "Adding plugins to Nushell..."
+  nu -c 'for plugin in nu_plugin_inc nu_plugin_polars nu_plugin_gstat nu_plugin_formats nu_plugin_query { plugin add ~/.cargo/bin/$plugin }' || { echo "Failed to add plugins to Nushell"; exit 1; }
+}
+
+# Main script execution
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  install_nix_darwin_and_home_manager
+else
+  install_nix_and_home_manager
+fi
+
+setup_git_and_ssh
+clone_dotfiles
+clone_eza_themes
+install_astrovim
+create_symlinks
+apply_home_manager
+install_nu_plugins
+
+echo "Setup complete!"
