@@ -1,0 +1,5 @@
+[user]
+    name = Ben Giles
+    #email = Changes per firm.
+[core]
+    editor = nvim

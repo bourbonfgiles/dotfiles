@@ -44,7 +44,4 @@ If you run into issues with `libgit2.so.1.8`, just curl and compile the version 
 Configure the eza theme:  
 `ln -sf "/home/giles/repos/personal/eza-themes/themes/tokyonight.yml" ~/.config/eza/theme.yml`  
   
-For terminal history, grab atuin via package manager and run `mkdir ~/.local/share/atuin/` followed by `atuin init nu | save ~/.local/share/atuin/init.nu`.  
-Then add `source ~/.local/share/atuin/init.nu` to your `config.nu`  
-
 Grab anything on the GUI.  
