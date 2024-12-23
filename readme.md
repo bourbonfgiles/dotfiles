@@ -4,7 +4,7 @@ Personal repo (open to all), for setting up Linux or Mac to be a relatively repr
 
 Structure:  
     .config  - Modern .config files for `neovim`, `LunarVim`, `nixpgkgs`, `Starship` and `NuShell`  
-      lvim    - Superseded by `LunarVim`.  
+      lvim    - Superseded by `AstroVim`.  
       nushell - `NuShell` configuration  
         conig.nu - `NuShell` config  
         env.nu   - `NuShell` env vars  
@@ -12,6 +12,8 @@ Structure:
     wsl      - Config for `Ubuntu` on `WSL`.  
     .zshrc   - For ZSH, now superseded by `NuShell`.  
     brewfile - For `Homebrew`, now superseded by `nixpgkgs`.  
+
+LSP and linter installation in Neovim using :LspInstall  
 
 Making use of Nix package manager to do the bulk of the work:  
   ```
