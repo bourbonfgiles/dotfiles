@@ -13,12 +13,6 @@ install_nix_and_home_manager() {
   nix-shell '<home-manager>' -A install
 }
 
-# Run Home Manager to apply the configuration
-apply_home_manager() {
-  echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
-  home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
-}
-
 # Function to set up Git and SSH keys
 setup_git_and_ssh() {
   echo "Setting up Git..."
@@ -61,6 +55,12 @@ create_symlinks() {
   stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
 }
 
+# Run Home Manager to apply the configuration
+apply_home_manager() {
+  echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
+  home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+}
+
 # Install Nu plugins
 install_nu_plugins() {
   echo "Installing Nu plugins..."
@@ -78,10 +78,10 @@ install_nu_plugins() {
 
 # Main script execution
 install_nix_and_home_manager
-apply_home_manager
 setup_git_and_ssh
 clone_dotfiles
 create_symlinks
+apply_home_manager
 install_nu_plugins
 
 echo "Setup complete!"
