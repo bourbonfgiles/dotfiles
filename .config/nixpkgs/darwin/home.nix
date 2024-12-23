@@ -1,4 +1,4 @@
-# home.nix
+# darwin/home.nix
 
 { config, pkgs, ... }:
 
@@ -76,4 +76,43 @@
     "mk-5/mk-5/fjira"
     "vladimirvivien/oss-tools/ktop"
   ];
+
+  # macOS native apps
+  homebrew.casks = [
+    "alfred",
+    "docker",
+    "iterm2",
+    "signal",
+    "slack",
+    "spotify"
+  ];
+
+  # Create symlink for Alfred
+  home.activation = {
+    createAlfredSymlink = lib.mkAfter {
+      description = "Create symlink for Alfred";
+      script = ''
+        ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
+      '';
+    };
+  };
+
+  # Dock settings
+  programs.dock.enable = true;
+  programs.dock.settings = {
+    autohide = false;
+    magnification = true;
+    tilesize = 36;
+    largesize = 64;
+    orientation = "bottom";
+    persistent-apps = [
+      "Spotify",
+      "Safari",
+      "iTerm2",
+      "Docker",
+      "Calendar",
+      "Outlook",
+      "Teams"
+    ];
+  };
 }

@@ -12,6 +12,18 @@ install_nix_and_home_manager() {
   nix-shell '<home-manager>' -A install
 }
 
+# Function to install Nix-Darwin and Home Manager
+install_nix_darwin_and_home_manager() {
+  echo "Installing Nix-Darwin..."
+  nix-build https://github.com/LnL7/nix-darwin/archive/master.tar.gz -A installer
+  ./result/bin/darwin-installer
+
+  echo "Installing Home Manager..."
+  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
+  nix-channel --update
+  nix-shell '<home-manager>' -A install
+}
+
 # Function to set up Git and SSH keys
 setup_git_and_ssh() {
   echo "Setting up Git..."
@@ -50,6 +62,17 @@ clone_eza_themes() {
   git clone https://github.com/eza-community/eza-themes.git ~/repos/personal/eza-themes || { echo "Failed to clone eza-themes repository"; exit 1; }
 }
 
+# Install AstroVim
+install_astrovim() {
+  echo "Installing AstroVim..."
+
+  # Clone AstroVim template
+  git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
+
+  # Remove template's git connection
+  rm -rf ~/.config/nvim/.git
+}
+
 # Create symlinks using Stow
 create_symlinks() {
   echo "Creating symlinks..."
@@ -73,8 +96,13 @@ create_symlinks() {
 
 # Run Home Manager to apply the configuration
 apply_home_manager() {
-  echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
-  home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix..."
+    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  else
+    echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
+    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  fi
 }
 
 # Install Nu plugins
@@ -93,10 +121,16 @@ install_nu_plugins() {
 }
 
 # Main script execution
-install_nix_and_home_manager
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  install_nix_darwin_and_home_manager
+else
+  install_nix_and_home_manager
+fi
+
 setup_git_and_ssh
 clone_dotfiles
 clone_eza_themes
+install_astrovim
 create_symlinks
 apply_home_manager
 install_nu_plugins
