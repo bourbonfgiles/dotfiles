@@ -1,9 +1,8 @@
 # dotfiles
 
-Personal repo for setting up Linux or Mac to be a relatively reproduceable environment for DevOps tooling utilising a shell script and nixpgkgs.  
+Personal repo for setting up Linux or Mac to be a relatively reproducible environment for DevOps tooling utilising a shell script and nixpkgs.  
 
 ```
-Structure:  
     .config  - Modern .config files for neovim, nixpgkgs, Starship and NuShell  
       nushell - NuShell configuration  
         config.nu - NuShell config  
@@ -41,7 +40,7 @@ Once done, check in `~/.cargo/bin/`
 From here you can run `plugin add ~/.cargo/bin/nu_plugin_gstat`.  
 If you run into issues with `libgit2.so.1.8`, just curl and compile the version showing in the error. 
 
-LSP and linter installation in Neovim using :LspInstall  
-  
+Once inside Neovim, handle LSP and linter installation using :LspInstall  
+
 Configure the eza theme:  
 `ln -sf "/home/giles/repos/personal/eza-themes/themes/tokyonight.yml" ~/.config/eza/theme.yml`  

@@ -1,23 +1,32 @@
-#Install
-#nix-shell '<home-manager>' -A install
+# home.nix
 
-{ pkgs, ... }:
+{ config, pkgs, ... }:
+
 {
+  # Home Manager configuration
+  imports = [
+    <home-manager/nixos>
+  ];
+
   home.packages = with pkgs; [
-    bash-language-server
+    bat
     carapace
-    devhints
-    dockerfile-language-server
+    curl
+    direnv
     dockly
     eza
+    fzf
+    gh
     git
+    glances
     go
     helm
     helmfile
     htop
+    ipcalc
+    jq
     k9s
     kubecm
-    kubelogin
     kubernetes-cli
     lazydocker
     lazygit
@@ -25,30 +34,77 @@
     make
     neovim
     nodejs
+    nushell
     opentofu
     pre-commit
     python3
+    ripgrep
     rust
     starship
     terraform
     terraform-docs
-    terraform-ls
     tldr
     typescript
     unzip
-    yaml-language-server
     yank
     yarn
-    zoxide
-    jq
-    fzf
-    bat
-    ripgrep
-    curl
-    curlie
-    ipcalc
+    yazi
+    zip
   ];
-}
 
-#Activate
-#home-manager switch
+  # Homebrew taps
+  homebrew.taps = [
+    "azure/kubelogin"
+    "cloudflare/cloudflare"
+    "homebrew/bundle"
+    "idoavrah/homebrew"
+    "jandedobbeleer/oh-my-posh"
+    "julien-cpsn/atac"
+    "mk-5/mk-5"
+    "vladimirvivien/oss-tools"
+  ];
+
+  # Homebrew packages managed via Nix
+  homebrew.packages = [
+    "azure/kubelogin/kubelogin"
+    "cloudflare/cloudflare/cf-terraforming"
+    "idoavrah/homebrew/tftui"
+    "jandedobbeleer/oh-my-posh/oh-my-posh"
+    "julien-cpsn/atac/atac"
+    "mk-5/mk-5/fjira"
+    "vladimirvivien/oss-tools/ktop"
+  ];
+
+  # macOS native apps
+  homebrew.casks = [
+    "alfred"
+    # Add other macOS native apps here
+  ];
+
+  # Create symlink for Alfred
+  home.activation = {
+    createAlfredSymlink = lib.mkAfter {
+      description = "Create symlink for Alfred";
+      script = ''
+        ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
+      '';
+    };
+  };
+
+  # Configuration for Neovim, Starship, and NuShell
+  home.file.".config/nvim/init.vim".text = ''
+    " Your Neovim configuration here
+  '';
+
+  home.file.".config/starship.toml".text = ''
+    # Your Starship configuration here
+  '';
+
+  home.file.".config/nushell/config.nu".text = ''
+    # Your NuShell configuration here
+  '';
+
+  home.file.".config/nushell/env.nu".text = ''
+    # Your NuShell environment variables here
+  '';
+}
