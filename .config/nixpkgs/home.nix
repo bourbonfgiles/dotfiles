@@ -90,21 +90,4 @@
       '';
     };
   };
-
-  # Configuration for Neovim, Starship, and NuShell
-  home.file.".config/nvim/init.vim".text = ''
-    " Your Neovim configuration here
-  '';
-
-  home.file.".config/starship.toml".text = ''
-    # Your Starship configuration here
-  '';
-
-  home.file.".config/nushell/config.nu".text = ''
-    # Your NuShell configuration here
-  '';
-
-  home.file.".config/nushell/env.nu".text = ''
-    # Your NuShell environment variables here
-  '';
 }

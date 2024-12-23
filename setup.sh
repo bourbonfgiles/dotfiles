@@ -30,21 +30,32 @@ setup_ssh() {
 }
 
 # Clone the dotfiles repository
-git clone https://github.com/bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles
-
-# Set up Git login
-setup_git
-
-# Set up SSH keys
-setup_ssh
+clone_dotfiles() {
+  echo "Cloning dotfiles repository..."
+  git clone https://github.com/bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles || { echo "Failed to clone repository"; exit 1; }
+}
 
 # Create symlinks using Stow
-cd ~/repos/personal/dotfiles
-stow -t ~ git
-stow -t ~ nvim
-stow -t ~ nushell
-stow -t ~ starship
-stow -t ~ nixpkgs
+create_symlinks() {
+  echo "Creating symlinks..."
+  cd ~/repos/personal/dotfiles || { echo "Failed to change directory"; exit 1; }
+  stow -t ~ nvim || { echo "Failed to stow nvim"; exit 1; }
+  stow -t ~ nushell || { echo "Failed to stow nushell"; exit 1; }
+  stow -t ~ starship || { echo "Failed to stow starship"; exit 1; }
+  stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
+}
 
 # Run Home Manager to apply the configuration
-home-manager switch
+apply_home_manager() {
+  echo "Applying Home Manager configuration..."
+  home-manager switch || { echo "Failed to apply Home Manager configuration"; exit 1; }
+}
+
+# Main script execution
+clone_dotfiles
+setup_git
+setup_ssh
+create_symlinks
+apply_home_manager
+
+echo "Setup complete!"
