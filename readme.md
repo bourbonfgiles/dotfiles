@@ -1,17 +1,17 @@
 # dotfiles
 
-Personal repo (open to all), for setting up Linux or Mac to be a relatively reproduceable environment for DevOps tooling.  
+Personal repo for setting up Linux or Mac to be a relatively reproduceable environment for DevOps tooling utilising a shell script and nixpgkgs.  
 
 ```
 Structure:  
-    .config  - Modern .config files for `neovim`, `nixpgkgs`, `Starship` and `NuShell`  
-      nushell - `NuShell` configuration  
-        config.nu - `NuShell` config  
-        env.nu   - `NuShell` env vars  
-      nvim    - `AstroVim` with customisations.   
-    wsl      - Config for `Ubuntu` on `WSL`.  
-    .zshrc   - For ZSH, now superseded by `NuShell`.  
-    brewfile - For `Homebrew`, now superseded by `nixpgkgs`.  
+    .config  - Modern .config files for neovim, nixpgkgs, Starship and NuShell  
+      nushell - NuShell configuration  
+        config.nu - NuShell config  
+        env.nu   - NuShell env vars  
+      nvim    - AstroVim with customisations.   
+    wsl      - Config for Ubuntu on WSL.  
+    .zshrc   - For ZSH, now superseded by NuShell.  
+    brewfile - For Homebrew, now superseded by nixpgkgs.  
 ```
 
 Making use of Nix package manager to do the bulk of the work:  
