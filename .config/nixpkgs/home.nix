@@ -78,8 +78,10 @@
 
   # macOS native apps
   homebrew.casks = [
-    "alfred"
-    # Add other macOS native apps here
+    "alfred",
+    "signal,"
+    "slack",
+    "spotify"
   ];
 
   # Create symlink for Alfred
@@ -90,5 +92,22 @@
         ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
       '';
     };
+  };
+
+  # Dock settings
+  programs.dock.enable = true;
+  programs.dock.settings = {
+    autohide = false;
+    magnification = true;
+    tilesize = 36;
+    largesize = 64;
+    orientation = "bottom";
+    persistent-apps = [
+      "Safari"
+      "Calendar"
+      "Outlook"
+      "Teams"
+      "Spotify"
+    ];
   };
 }

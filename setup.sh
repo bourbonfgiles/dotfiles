@@ -61,16 +61,14 @@ create_symlinks() {
  
   echo "Configuring the eza theme..."
   mkdir -p ~/.config/eza
-  ln -sf "$(pwd)/../eza-themes/themes/dracula.yml" ~/.config/eza/theme.yml || { echo "Failed to configure eza theme"; exit 1; }
+  ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/.config/eza/theme.yml || { echo "Failed to configure eza theme"; exit 1; }
 
   # macOS specific configuration
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Configuring eza theme for macOS..."
     mkdir -p ~/Library/Application\ Support/eza
-    ln -sf "$(pwd)/../eza-themes/themes/dracula.yml" ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
+    ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
   fi
-}
-
 }
 
 # Run Home Manager to apply the configuration
