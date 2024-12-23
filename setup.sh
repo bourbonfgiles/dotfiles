@@ -131,12 +131,12 @@ else
   install_nix_and_home_manager
 fi
 
+apply_home_manager
 setup_git_and_ssh
 clone_dotfiles
 clone_eza_themes
 install_astrovim
 create_symlinks
-apply_home_manager
 install_nu_plugins
 
 echo "Setup complete!"
