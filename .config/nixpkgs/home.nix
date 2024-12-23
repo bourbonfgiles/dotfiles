@@ -41,6 +41,7 @@
     ripgrep
     rust
     starship
+    stow
     terraform
     terraform-docs
     tldr

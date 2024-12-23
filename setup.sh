@@ -1,5 +1,24 @@
 #!/bin/zsh
 
+
+# Function to install Nix and Home Manager
+install_nix_and_home_manager() {
+  echo "Installing Nix..."
+  curl -L https://nixos.org/nix/install | sh
+  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+
+  echo "Installing Home Manager..."
+  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
+  nix-channel --update
+  nix-shell '<home-manager>' -A install
+}
+
+# Run Home Manager to apply the configuration
+apply_home_manager() {
+  echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
+  home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+}
+
 # Function to set up Git and SSH keys
 setup_git_and_ssh() {
   echo "Setting up Git..."
@@ -42,16 +61,27 @@ create_symlinks() {
   stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
 }
 
-# Run Home Manager to apply the configuration
-apply_home_manager() {
-  echo "Applying Home Manager configuration..."
-  home-manager switch || { echo "Failed to apply Home Manager configuration"; exit 1; }
+# Install Nu plugins
+install_nu_plugins() {
+  echo "Installing Nu plugins..."
+  nu_plugins=(
+    nu_plugin_inc
+    nu_plugin_polars
+    nu_plugin_gstat
+    nu_plugin_formats
+    nu_plugin_query
+  )
+  for plugin in "${nu_plugins[@]}"; do
+    cargo install "$plugin" --locked || { echo "Failed to install $plugin"; exit 1; }
+  done
 }
 
 # Main script execution
+install_nix_and_home_manager
+apply_home_manager
 setup_git_and_ssh
 clone_dotfiles
 create_symlinks
-apply_home_manager
+install_nu_plugins
 
 echo "Setup complete!"
