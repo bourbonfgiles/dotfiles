@@ -24,6 +24,17 @@ install_nix_darwin_and_home_manager() {
   nix-shell '<home-manager>' -A install
 }
 
+# Run Home Manager to apply the configuration
+apply_home_manager() {
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Applying Home Manager configuration from remote GitHub URL..."
+    home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  else
+    echo "Applying Home Manager configuration from remote GitHub URL..."
+    home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+  fi
+}
+
 # Function to set up Git and SSH keys
 setup_git_and_ssh() {
   echo "Setting up Git..."
@@ -91,17 +102,6 @@ create_symlinks() {
     echo "Configuring the eza theme..."
     mkdir -p ~/.config/eza
     ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/.config/eza/theme.yml || { echo "Failed to configure eza theme"; exit 1; }
-  fi
-}
-
-# Run Home Manager to apply the configuration
-apply_home_manager() {
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix..."
-    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
-  else
-    echo "Applying Home Manager configuration from ~/repos/personal/dotfiles/.config/nixpkgs/home.nix..."
-    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
   fi
 }
 
