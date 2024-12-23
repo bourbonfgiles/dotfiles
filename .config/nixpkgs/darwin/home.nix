@@ -115,4 +115,20 @@
       "Teams"
     ];
   };
+
+  # Environment variables for iTerm2
+  home.sessionVariables = {
+    TERMINAL = "iterm2";
+    TERM_PROGRAM = "iTerm.app";
+  };
+
+  # Set Nushell as the default shell for iTerm2
+  home.activation = {
+    setNushellAsDefault = lib.mkAfter {
+      description = "Set Nushell as the default shell for iTerm2";
+      script = ''
+        chsh -s $(which nu)
+      '';
+    };
+  };
 }
