@@ -4,7 +4,7 @@
   # User information
   home.username = "giles";
   home.homeDirectory = "/home/giles";
-  home.stateVersion = "24.11";  # Version of the Home Manager state
+  home.stateVersion = "24.11";  
 
   # Packages to be installed in the user's environment
   home.packages = with pkgs; [
@@ -53,12 +53,12 @@
   # Dock settings for macOS
   programs.dock.enable = true;
   programs.dock.settings = {
-    autohide = false;  # Dock is always visible
-    magnification = true;  # Enable magnification of dock icons
-    tilesize = 36;  # Size of dock icons
-    largesize = 64;  # Size of magnified dock icons
-    orientation = "bottom";  # Position of the dock
-    persistent-apps = [  # Apps that will always be in the dock
+    autohide = false;  
+    magnification = true;  
+    tilesize = 36;  
+    largesize = 64;  
+    orientation = "bottom";  
+    persistent-apps = [  
       "Spotify"
       "Safari"
       "iTerm2"
@@ -71,8 +71,8 @@
 
   # Environment variables for iTerm2
   home.sessionVariables = {
-    TERMINAL = "iterm2";  # Set terminal type to iTerm2
-    TERM_PROGRAM = "iTerm.app";  # Set terminal program to iTerm2
+    TERMINAL = "iterm2";  
+    TERM_PROGRAM = "iTerm.app";  
   };
 
   # Directories to include in the PATH environment variable
@@ -86,7 +86,7 @@
 
   # Zsh configuration
   programs.zsh = {
-    enable = true;  # Enable Zsh as the default shell
+    enable = true;  
     initExtra = ''
       # Additional configurations for Zsh
       export PATH=/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH
@@ -102,6 +102,18 @@
     script = ''
       ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
     '';
+  }
+
+  # Nushell configuration
+  programs.nushell = {
+    enable = true;   
+    initExtra = ''
+      # Additional configurations for Nushell
+      let-env PATH = "$env.PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin"
+      if test -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh {
+        source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      }
+    '';
   };
 
   # Set Nushell as the default shell for iTerm2
@@ -114,18 +126,18 @@
 
   # iTerm2 Quake mode configuration
   programs.iterm2 = {
-    enable = true;  # Enable iTerm2 configuration
+    enable = true;  
     settings = {
       "New Bookmarks" = [
         {
-          "Guid" = "00000000-0000-0000-0000-000000000000";  # Unique identifier for the bookmark
-          "Name" = "Hotkey Window";  # Name of the bookmark
-          "Shortcut" = "Ctrl-`";  # Shortcut to open the hotkey window
-          "Window Type" = "Hotkey";  # Type of window
-          "Screen" = "Screen with Cursor";  # Screen to display the window on
-          "Space" = "All Spaces";  # Display the window in all spaces
-          "Style" = "Full-Width Top of Screen";  # Style of the window
-          "Tab Bar" = true;  # Enable tabs in the window
+          "Guid" = "00000000-0000-0000-0000-000000000000";  
+          "Name" = "Hotkey Window";  
+          "Shortcut" = "Ctrl-`";  
+          "Window Type" = "Hotkey";  
+          "Screen" = "Screen with Cursor";  
+          "Space" = "All Spaces";  
+          "Style" = "Full-Width Top of Screen";  
+          "Tab Bar" = true;  
         }
       ];
     };
