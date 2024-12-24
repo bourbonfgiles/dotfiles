@@ -1,10 +1,12 @@
 { config, pkgs, ... }:
 
 {
+  # User information
   home.username = "giles";
   home.homeDirectory = "/home/giles";
-  home.stateVersion = "24.11";
+  home.stateVersion = "24.11";  # Version of the Home Manager state
 
+  # Packages to be installed in the user's environment
   home.packages = with pkgs; [
     bat
     carapace
@@ -48,15 +50,15 @@
     zip
   ];
 
-  # Dock settings
+  # Dock settings for macOS
   programs.dock.enable = true;
   programs.dock.settings = {
-    autohide = false;
-    magnification = true;
-    tilesize = 36;
-    largesize = 64;
-    orientation = "bottom";
-    persistent-apps = [
+    autohide = false;  # Dock is always visible
+    magnification = true;  # Enable magnification of dock icons
+    tilesize = 36;  # Size of dock icons
+    largesize = 64;  # Size of magnified dock icons
+    orientation = "bottom";  # Position of the dock
+    persistent-apps = [  # Apps that will always be in the dock
       "Spotify"
       "Safari"
       "iTerm2"
@@ -69,20 +71,24 @@
 
   # Environment variables for iTerm2
   home.sessionVariables = {
-    TERMINAL = "iterm2";
-    TERM_PROGRAM = "iTerm.app";
+    TERMINAL = "iterm2";  # Set terminal type to iTerm2
+    TERM_PROGRAM = "iTerm.app";  # Set terminal program to iTerm2
   };
 
+  # Directories to include in the PATH environment variable
   home.sessionPath = [
     "/run/current-system/sw/bin"
-      "$HOME/.nix-profile/bin"
+    "$HOME/.nix-profile/bin"
   ];
  
+  # Enable Home Manager
   programs.home-manager.enable = true;
+
+  # Zsh configuration
   programs.zsh = {
-    enable = true;
+    enable = true;  # Enable Zsh as the default shell
     initExtra = ''
-      # Add any additional configurations here
+      # Additional configurations for Zsh
       export PATH=/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH
       if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
         . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
@@ -108,18 +114,18 @@
 
   # iTerm2 Quake mode configuration
   programs.iterm2 = {
-    enable = true;
+    enable = true;  # Enable iTerm2 configuration
     settings = {
       "New Bookmarks" = [
         {
-          "Guid" = "00000000-0000-0000-0000-000000000000";
-          "Name" = "Hotkey Window";
-          "Shortcut" = "Ctrl-`";
-          "Window Type" = "Hotkey";
-          "Screen" = "Screen with Cursor";
-          "Space" = "All Spaces";
-          "Style" = "Full-Width Top of Screen";
-          "Tab Bar" = true; # Enable tabs
+          "Guid" = "00000000-0000-0000-0000-000000000000";  # Unique identifier for the bookmark
+          "Name" = "Hotkey Window";  # Name of the bookmark
+          "Shortcut" = "Ctrl-`";  # Shortcut to open the hotkey window
+          "Window Type" = "Hotkey";  # Type of window
+          "Screen" = "Screen with Cursor";  # Screen to display the window on
+          "Space" = "All Spaces";  # Display the window in all spaces
+          "Style" = "Full-Width Top of Screen";  # Style of the window
+          "Tab Bar" = true;  # Enable tabs in the window
         }
       ];
     };
