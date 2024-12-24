@@ -1,38 +1,32 @@
 #!/bin/zsh
 
-# Function to install Nix and Home Manager on Ubuntu
-install_nix_and_home_manager() {
-  echo "Installing Nix..."
-  curl -L https://nixos.org/nix/install | sh
-  . /home/$USER/.nix-profile/etc/profile.d/nix.sh
-
-  echo "Installing Home Manager..."
-  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
-  nix-channel --update
-  nix-shell '<home-manager>' -A install
-}
-
 # Function to install Nix-Darwin and Home Manager
 install_nix_darwin_and_home_manager() {
-  echo "Installing Nix-Darwin..."
-  nix-build https://github.com/LnL7/nix-darwin/archive/master.tar.gz -A installer
-  ./result/bin/darwin-installer
+  if command -v nix >/dev/null 2>&1; then
+    echo "Nix is already installed. Skipping Nix installation."
+  else
+    echo "Installing Nix version 24.11..."
+    sh <(curl -L https://releases.nixos.org/nix/nix-24.11/install)
+  fi
 
-  echo "Installing Home Manager..."
-  nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
-  nix-channel --update
-  nix-shell '<home-manager>' -A install
+  if nix-channel --list | grep -q home-manager; then
+    echo "Home Manager is already installed. Skipping Home Manager installation."
+  else
+    echo "Installing Nix-Darwin..."
+    nix-build https://github.com/LnL7/nix-darwin/archive/release-24.11.tar.gz -A installer
+    ./result/bin/darwin-installer
+
+    echo "Installing Home Manager..."
+    nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+    nix-channel --update
+    nix-shell '<home-manager>' --attr install
+  fi
 }
 
 # Run Home Manager to apply the configuration
 apply_home_manager() {
-  if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Home Manager configuration from remote GitHub URL..."
     home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
-  else
-    echo "Applying Home Manager configuration from remote GitHub URL..."
-    home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
-  fi
 }
 
 # Function to set up Git and SSH keys
@@ -92,17 +86,8 @@ create_symlinks() {
   stow -t ~ nushell || { echo "Failed to stow nushell"; exit 1; }
   stow -t ~ starship || { echo "Failed to stow starship"; exit 1; }
   stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
-
-  # macOS specific configuration
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Configuring eza theme for macOS..."
-    mkdir -p ~/Library/Application\ Support/eza
-    ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
-  else
-    echo "Configuring the eza theme..."
-    mkdir -p ~/.config/eza
-    ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/.config/eza/theme.yml || { echo "Failed to configure eza theme"; exit 1; }
-  fi
+  mkdir -p ~/Library/Application\ Support/eza
+  ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
 }
 
 # Install Nu plugins
@@ -124,13 +109,7 @@ install_nu_plugins() {
   nu -c 'for plugin in nu_plugin_inc nu_plugin_polars nu_plugin_gstat nu_plugin_formats nu_plugin_query { plugin add ~/.cargo/bin/$plugin }' || { echo "Failed to add plugins to Nushell"; exit 1; }
 }
 
-# Main script execution
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  install_nix_darwin_and_home_manager
-else
-  install_nix_and_home_manager
-fi
-
+install_nix_darwin_and_home_manager
 apply_home_manager
 setup_git_and_ssh
 clone_dotfiles

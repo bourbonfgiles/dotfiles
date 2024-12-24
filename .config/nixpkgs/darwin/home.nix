@@ -1,10 +1,9 @@
 { config, pkgs, ... }:
 
 {
-  # Home Manager configuration
-  imports = [
-    <home-manager/nixos>
-  ];
+  home.username = "giles";
+  home.homeDirectory = "/home/giles";
+  home.stateVersion = "24.11";
 
   home.packages = with pkgs; [
     bat
@@ -12,7 +11,6 @@
     cargo
     curl
     direnv
-    dockly
     eza
     fzf
     gh
@@ -26,11 +24,10 @@
     jq
     k9s
     kubecm
-    kubernetes-cli
+    kubectl
     lazydocker
     lazygit
     lua
-    make
     neovim
     nodejs
     nushell
@@ -38,7 +35,6 @@
     pre-commit
     python3
     ripgrep
-    rust
     starship
     stow
     terraform
@@ -52,49 +48,6 @@
     zip
   ];
 
-  # Homebrew taps
-  homebrew.taps = [
-    "azure/kubelogin"
-    "cloudflare/cloudflare"
-    "homebrew/bundle"
-    "idoavrah/homebrew"
-    "jandedobbeleer/oh-my-posh"
-    "julien-cpsn/atac"
-    "mk-5/mk-5"
-    "vladimirvivien/oss-tools"
-  ];
-
-  # Homebrew packages managed via Nix
-  homebrew.packages = [
-    "azure/kubelogin/kubelogin"
-    "cloudflare/cloudflare/cf-terraforming"
-    "idoavrah/homebrew/tftui"
-    "jandedobbeleer/oh-my-posh/oh-my-posh"
-    "julien-cpsn/atac/atac"
-    "mk-5/mk-5/fjira"
-    "vladimirvivien/oss-tools/ktop"
-  ];
-
-  # macOS native apps
-  homebrew.casks = [
-    "alfred",
-    "docker",
-    "iterm2",
-    "signal",
-    "slack",
-    "spotify"
-  ];
-
-  # Create symlink for Alfred
-  home.activation = {
-    createAlfredSymlink = lib.mkAfter {
-      description = "Create symlink for Alfred";
-      script = ''
-        ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
-      '';
-    };
-  };
-
   # Dock settings
   programs.dock.enable = true;
   programs.dock.settings = {
@@ -104,12 +57,12 @@
     largesize = 64;
     orientation = "bottom";
     persistent-apps = [
-      "Spotify",
-      "Safari",
-      "iTerm2",
-      "Docker",
-      "Calendar",
-      "Outlook",
+      "Spotify"
+      "Safari"
+      "iTerm2"
+      "Docker"
+      "Calendar"
+      "Outlook"
       "Teams"
     ];
   };
@@ -120,14 +73,20 @@
     TERM_PROGRAM = "iTerm.app";
   };
 
+  # Create symlink for Alfred
+  home.activation.createAlfredSymlink = lib.mkAfter {
+    description = "Create symlink for Alfred";
+    script = ''
+      ln -sf /opt/homebrew/Caskroom/alfred/*/Alfred.app /Applications/Alfred.app
+    '';
+  };
+
   # Set Nushell as the default shell for iTerm2
-  home.activation = {
-    setNushellAsDefault = lib.mkAfter {
-      description = "Set Nushell as the default shell for iTerm2";
-      script = ''
-        chsh -s $(which nu)
-      '';
-    };
+  home.activation.setNushellAsDefault = lib.mkAfter {
+    description = "Set Nushell as the default shell for iTerm2";
+    script = ''
+      chsh -s $(which nu)
+    '';
   };
 
   # iTerm2 Quake mode configuration
