@@ -28,7 +28,6 @@
     lazydocker
     lazygit
     lua
-    neovim
     nodejs
     nushell
     opentofu

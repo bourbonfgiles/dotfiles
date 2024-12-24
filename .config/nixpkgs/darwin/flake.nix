@@ -21,6 +21,7 @@
           {
             environment.systemPackages = [
               docker   
+              neovim
             ];
             services.nix-daemon.enable = true;  # Enable the Nix daemon for multi-user support
             nix.settings.experimental-features = "nix-command flakes";  # Enable experimental Nix features
