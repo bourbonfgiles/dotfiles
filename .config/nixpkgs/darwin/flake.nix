@@ -3,18 +3,27 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
-    nix-darwin.url = "github:lnl7/nix-darwin";
-    home-manager.url = "github:nix-community/home-manager";
+    nix-darwin.url = "github:LnL7/nix-darwin";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, nix-darwin, home-manager }: {
+  outputs = inputs@{ self, nix-darwin, nixpkgs, home-manager }: {
     darwinConfigurations = {
       hostname = nix-darwin.lib.darwinSystem {
-        system = "x86_64-darwin";
+        system = "aarch64-darwin";
         modules = [
           ./darwin-configuration.nix
           home-manager.nixosModules.home-manager
           {
+            environment.systemPackages = [
+            ];
+            services.nix-daemon.enable = true;
+            nix.settings.experimental-features = "nix-command flakes";
+            security.pam.enableSudoTouchIdAuth = true;
             homebrew = {
               enable = true;
               taps = [
