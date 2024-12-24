@@ -11,12 +11,10 @@
     bat
     carapace
     cargo
-    curl
     direnv
     eza
     fzf
     gh
-    git
     glances
     go
     helm
@@ -35,7 +33,6 @@
     nushell
     opentofu
     pre-commit
-    python3
     ripgrep
     starship
     stow
@@ -43,11 +40,9 @@
     terraform-docs
     tldr
     typescript
-    unzip
     yank
     yarn
     yazi
-    zip
   ];
 
   # Dock settings for macOS

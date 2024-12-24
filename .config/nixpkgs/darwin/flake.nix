@@ -20,7 +20,7 @@
           home-manager.nixosModules.home-manager  # Include Home Manager module
           {
             environment.systemPackages = [
-              # List of system-wide packages to be installed
+              docker   
             ];
             services.nix-daemon.enable = true;  # Enable the Nix daemon for multi-user support
             nix.settings.experimental-features = "nix-command flakes";  # Enable experimental Nix features
