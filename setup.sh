@@ -1,32 +1,13 @@
 #!/bin/zsh
 
-# Function to install Nix-Darwin and Home Manager
-install_nix_darwin_and_home_manager() {
-  if command -v nix >/dev/null 2>&1; then
-    echo "Nix is already installed. Skipping Nix installation."
+# Function to install Git
+install_git() {
+  if command -v git >/dev/null 2>&1; then
+    echo "Git is already installed. Skipping Git installation."
   else
-    echo "Installing Nix version 24.11..."
-    sh <(curl -L https://releases.nixos.org/nix/nix-24.11/install)
+    echo "Installing Git..."
+    xcode-select --install
   fi
-
-  if nix-channel --list | grep -q home-manager; then
-    echo "Home Manager is already installed. Skipping Home Manager installation."
-  else
-    echo "Installing Nix-Darwin..."
-    nix-build https://github.com/LnL7/nix-darwin/archive/release-24.11.tar.gz -A installer
-    ./result/bin/darwin-installer
-
-    echo "Installing Home Manager..."
-    nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
-    nix-channel --update
-    nix-shell '<home-manager>' --attr install
-  fi
-}
-
-# Run Home Manager to apply the configuration
-apply_home_manager() {
-    echo "Applying Home Manager configuration from remote GitHub URL..."
-    home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
 }
 
 # Function to set up Git and SSH keys
@@ -53,6 +34,23 @@ setup_git_and_ssh() {
   else
     echo "SSH key already exists."
   fi
+}
+
+# Function to install Nix
+install_nix() {
+  if command -v nix >/dev/null 2>&1; then
+    echo "Nix is already installed. Skipping Nix installation."
+  else
+    echo "Installing Nix using the Determinate Nix Installer..."
+    curl -L https://install.determinate.systems/nix | sh -s -- install
+  fi
+}
+
+# Function to install Nix-Darwin
+install_nix_darwin() {
+  echo "Installing Nix-Darwin..."
+  nix-build https://github.com/LnL7/nix-darwin/archive/release-24.11.tar.gz -A installer
+  ./result/bin/darwin-installer
 }
 
 # Create necessary directories
@@ -97,6 +95,24 @@ create_symlinks() {
   ln -sf ~/repos/personal/dotfiles/.zshrc ~/.zshrc || { echo "Failed to symlink .zshrc"; exit 1; }
 }
 
+# Function to install Home Manager
+install_home_manager() {
+  if nix-channel --list | grep -q home-manager; then
+    echo "Home Manager is already installed. Skipping Home Manager installation."
+  else
+    echo "Installing Home Manager..."
+    nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+    nix-channel --update
+    nix-shell '<home-manager>' --attr install
+  fi
+}
+
+# Run Home Manager to apply the configuration
+apply_home_manager() {
+    echo "Applying Home Manager configuration from remote GitHub URL..."
+    home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+}
+
 # Install Nu plugins
 install_nu_plugins() {
   echo "Installing Nu plugins..."
@@ -116,14 +132,17 @@ install_nu_plugins() {
   nu -c 'for plugin in nu_plugin_inc nu_plugin_polars nu_plugin_gstat nu_plugin_formats nu_plugin_query { plugin add ~/.cargo/bin/$plugin }' || { echo "Failed to add plugins to Nushell"; exit 1; }
 }
 
-install_nix_darwin_and_home_manager
-apply_home_manager
+install_git
 setup_git_and_ssh
+install_nix
+install_nix_darwin
 create_directories
 clone_dotfiles
 clone_eza_themes
 install_astrovim
 create_symlinks
+install_home_manager
+apply_home_manager
 install_nu_plugins
 
 echo "Setup complete!"
