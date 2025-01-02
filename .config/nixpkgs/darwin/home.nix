@@ -110,14 +110,6 @@
     '';
   };
 
-  # Set Nushell as the default shell for iTerm2
-  home.activation.setNushellAsDefault = lib.mkAfter {
-    description = "Set Nushell as the default shell for iTerm2";
-    script = ''
-      chsh -s $(which nu)
-    '';
-  };
-
   # iTerm2 Quake mode configuration
   programs.iterm2 = {
     enable = true;  
