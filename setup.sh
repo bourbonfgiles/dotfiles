@@ -107,10 +107,12 @@ install_home_manager() {
   fi
 }
 
-# Run Home Manager to apply the configuration
-apply_home_manager() {
-    echo "Applying Home Manager configuration from remote GitHub URL..."
-    home-manager switch -f https://raw.githubusercontent.com/bourbonfgiles/dotfiles/master/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration"; exit 1; }
+#apply_home_manager() {
+    echo "Applying Home Manager configuration using flake.nix..."
+    home-manager switch --flake ~/repos/personal/dotfiles/.config/nixpkgs/darwin/flake.nix || { echo "Failed to apply Home Manager configuration using flake.nix"; exit 1; }
+
+    echo "Applying additional Home Manager configuration using home.nix..."
+    home-manager switch -f ~/repos/personal/dotfiles/.config/nixpkgs/darwin/home.nix || { echo "Failed to apply Home Manager configuration using home.nix"; exit 1; }
 }
 
 # Install Nu plugins
