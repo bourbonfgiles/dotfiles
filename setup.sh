@@ -55,6 +55,12 @@ setup_git_and_ssh() {
   fi
 }
 
+# Create necessary directories
+create_directories() {
+  echo "Creating required directories..."
+  mkdir -p ~/repos/personal || { echo "Failed to create directories"; exit 1; }
+}
+
 # Clone the dotfiles repository
 clone_dotfiles() {
   echo "Cloning dotfiles repository..."
@@ -88,6 +94,7 @@ create_symlinks() {
   stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
   mkdir -p ~/Library/Application\ Support/eza
   ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
+  ln -sf ~/repos/personal/dotfiles/.zshrc ~/.zshrc || { echo "Failed to symlink .zshrc"; exit 1; }
 }
 
 # Install Nu plugins
@@ -112,6 +119,7 @@ install_nu_plugins() {
 install_nix_darwin_and_home_manager
 apply_home_manager
 setup_git_and_ssh
+create_directories
 clone_dotfiles
 clone_eza_themes
 install_astrovim
