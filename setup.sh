@@ -90,6 +90,7 @@ create_symlinks() {
   stow -t ~ nushell || { echo "Failed to stow nushell"; exit 1; }
   stow -t ~ starship || { echo "Failed to stow starship"; exit 1; }
   stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
+  stow -t ~ k9s || { echo "Failed to stow k9s"; exit 1; }
   mkdir -p ~/Library/Application\ Support/eza
   ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
   ln -sf ~/repos/personal/dotfiles/.zshrc ~/.zshrc || { echo "Failed to symlink .zshrc"; exit 1; }

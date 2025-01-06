@@ -1,0 +1,17 @@
+aliases:
+  po: pods
+  svc: services
+  ing: ingresses
+  cm: configmaps
+  pvc: persistentvolumeclaims
+  pv: persistentvolumes
+  ns: namespaces
+  sa: serviceaccounts
+  ds: daemonsets
+  dp: deployments
+  sts: statefulsets
+  rs: replicasets
+  ev: events
+  crd: customresourcedefinitions
+  apisvc: apiservices
+  hpa: horizontalpodautoscalers
