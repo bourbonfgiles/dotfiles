@@ -8,9 +8,11 @@
 
   # Packages to be installed in the user's environment
   home.packages = with pkgs; [
+    aerospace
     bat
     carapace
     cargo
+    cloudflare-warp
     direnv
     eza
     fzf
