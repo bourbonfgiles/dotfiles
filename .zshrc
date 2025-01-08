@@ -7,9 +7,6 @@ SAVEHIST=20000  # Set the number of history entries to save
 alias ll='eza -l --group-directories-first --icons --color=always --header'
 alias z='zoxide'
 
-# Initialize Homebrew
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"  # Initialize Homebrew
-
 if command -v zoxide > /dev/null; then
   eval "$(zoxide init zsh)"
 fi
