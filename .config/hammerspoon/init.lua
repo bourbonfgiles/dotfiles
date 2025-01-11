@@ -14,12 +14,12 @@ local function maximizeWindow()
     end
 end
 
--- Define a function to minimize the window
-local function minimizeWindow()
+-- Define a function to hide the window
+local function hideWindow()
     local win = hs.window.focusedWindow()
     if win then
-        win:minimize()
-        alert.show("Minimized")
+        win:application():hide()
+        alert.show("Hidden")
     end
 end
 
@@ -45,6 +45,6 @@ end
 
 -- Bind hotkeys to the functions
 hotkey.bind({"alt"}, "Up", maximizeWindow)
-hotkey.bind({"alt"}, "Down", minimizeWindow)
+hotkey.bind({"alt"}, "Down", hideWindow)
 hotkey.bind({"alt"}, "Left", leftHalf)
 hotkey.bind({"alt"}, "Right", rightHalf)
