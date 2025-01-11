@@ -86,11 +86,8 @@ install_astrovim() {
 create_symlinks() {
   echo "Creating symlinks..."
   cd ~/repos/personal/dotfiles || { echo "Failed to change directory"; exit 1; }
-  stow -t ~ nvim || { echo "Failed to stow nvim"; exit 1; }
-  stow -t ~ nushell || { echo "Failed to stow nushell"; exit 1; }
-  stow -t ~ starship || { echo "Failed to stow starship"; exit 1; }
-  stow -t ~ nixpkgs || { echo "Failed to stow nixpkgs"; exit 1; }
-  stow -t ~ k9s || { echo "Failed to stow k9s"; exit 1; }
+  rm -rf ~/.config #Exclude iterm2
+  stow -t ~/.config .config
   mkdir -p ~/Library/Application\ Support/eza
   ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
   ln -sf ~/repos/personal/dotfiles/.zshrc ~/.zshrc || { echo "Failed to symlink .zshrc"; exit 1; }
@@ -119,16 +116,13 @@ install_home_manager() {
 # Install Nu plugins
 install_nu_plugins() {
   echo "Installing Nu plugins..."
-  nu_plugins=(
-    nu_plugin_inc
-    nu_plugin_polars
-    nu_plugin_gstat
-    nu_plugin_formats
-    nu_plugin_query
-  )
-  for plugin in "${nu_plugins[@]}"; do
-    cargo install "$plugin" --locked || { echo "Failed to install $plugin"; exit 1; }
-  done
+[ nu_plugin_inc
+  nu_plugin_polars
+  nu_plugin_gstat
+  nu_plugin_formats
+  nu_plugin_query
+] | each { cargo install $in --locked } | ignore
+}
  
   # Add plugins to Nushell
   echo "Adding plugins to Nushell..."
