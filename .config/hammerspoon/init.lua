@@ -1,19 +1,16 @@
 -- Load Hammerspoon extensions
 local hotkey = require "hs.hotkey"
 local window = require "hs.window"
-local grid = require "hs.grid"
+local screen = require "hs.screen"
 local alert = require "hs.alert"
 
--- Set grid size
-hs.grid.setGrid('2x2')
-hs.grid.setMargins('0x0')
-
--- Define a function to maximize the window
+-- Define a function to maximize the window minus the dock
 local function maximizeWindow()
     local win = hs.window.focusedWindow()
     if win then
-        win:maximize()
-        alert.show("Maximized")
+        local screenFrame = win:screen():frame()
+        win:setFrame(screenFrame)
+        alert.show("Maximized (minus dock)")
     end
 end
 
@@ -30,7 +27,8 @@ end
 local function leftHalf()
     local win = hs.window.focusedWindow()
     if win then
-        hs.grid.set(win, '0,0 1x2')
+        local screenFrame = win:screen():frame()
+        win:setFrame(hs.geometry.rect(screenFrame.x, screenFrame.y, screenFrame.w / 2, screenFrame.h))
         alert.show("Left Half")
     end
 end
@@ -39,13 +37,14 @@ end
 local function rightHalf()
     local win = hs.window.focusedWindow()
     if win then
-        hs.grid.set(win, '1,0 1x2')
+        local screenFrame = win:screen():frame()
+        win:setFrame(hs.geometry.rect(screenFrame.x + screenFrame.w / 2, screenFrame.y, screenFrame.w / 2, screenFrame.h))
         alert.show("Right Half")
     end
 end
 
 -- Bind hotkeys to the functions
-hotkey.bind({"opt"}, "Up", maximizeWindow)
-hotkey.bind({"opt"}, "Down", minimizeWindow)
-hotkey.bind({"opt"}, "Left", leftHalf)
-hotkey.bind({"opt"}, "Right", rightHalf)
+hotkey.bind({"alt"}, "Up", maximizeWindow)
+hotkey.bind({"alt"}, "Down", minimizeWindow)
+hotkey.bind({"alt"}, "Left", leftHalf)
+hotkey.bind({"alt"}, "Right", rightHalf)
