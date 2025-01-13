@@ -7,11 +7,7 @@ $env.STARSHIP_SHELL = "nu"
 source ~/.cache/starship/init.nu
 source ~/.cache/carapace/init.nu
 
-alias ll = eza
-alias pbcopy = xclip -selection clipboard
-alias pbpaste = xclip -selection clipboard -o
-alias cps = gh copilot suggest
-alias cpe = gh copilot explain
+alias ll = ls -a
 
 # For more information on defining custom themes, see
 # https://www.nushell.sh/book/coloring_and_theming.html
