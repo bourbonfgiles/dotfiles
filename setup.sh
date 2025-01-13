@@ -86,7 +86,7 @@ install_astrovim() {
 create_symlinks() {
   echo "Creating symlinks..."
   cd ~/repos/personal/dotfiles || { echo "Failed to change directory"; exit 1; }
-  rm -rf ~/.config #Exclude iterm2
+  rm -rf ~/.config 
   stow -t ~/.config .config
   mkdir -p ~/Library/Application\ Support/eza
   ln -sf ~/repos/personal/eza-themes/themes/dracula.yml ~/Library/Application\ Support/eza/theme.yml || { echo "Failed to configure eza theme for macOS"; exit 1; }
