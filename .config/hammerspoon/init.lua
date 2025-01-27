@@ -11,7 +11,7 @@ function reloadConfig(files)
     end
 end
 myWatcher = hs.pathwatcher.new(os.getenv("HOME") .. "/.config/hammerspoon/", reloadConfig):start()
-hs.alert.show("Config loaded")
+hs.alert.show("Reconfiguration successful. New settings have been applied.")
 
 -- Load Hammerspoon extensions
 local hotkey = require "hs.hotkey"
@@ -104,16 +104,18 @@ hs.loadSpoon("Caffeine")
 local function startCaffeine()
     spoon.Caffeine:start()
     hs.notify.new({title="Hammerspoon", informativeText="Caffeine activated"}):send()
+    hs.alert.show("Caffeine activated at " .. os.date("%X"))
 end
 
 -- Function to stop Caffeine
 local function stopCaffeine()
     spoon.Caffeine:stop()
     hs.notify.new({title="Hammerspoon", informativeText="Caffeine deactivated"}):send()
+    hs.alert.show("Caffeine deactivated at " .. os.date("%X"))
 end
 
--- Schedule Caffeine to start at 9am
-hs.timer.doAt("09:00", startCaffeine)
+-- Schedule Caffeine to start at 8am
+hs.timer.doAt("08:00", startCaffeine)
 
 -- Schedule Caffeine to stop at 5:30pm
 hs.timer.doAt("17:30", stopCaffeine)

@@ -1,0 +1,3 @@
+[keybindings]
+"Home" = "moveToBeginningOfLine"
+"End" = "moveToEndOfLine"
