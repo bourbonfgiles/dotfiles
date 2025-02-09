@@ -1,3 +1,2 @@
-[keybindings]
-"Home" = "moveToBeginningOfLine"
-"End" = "moveToEndOfLine"
+keybind = Home=scroll_to_top
+keybind = End=scroll_to_bottom
