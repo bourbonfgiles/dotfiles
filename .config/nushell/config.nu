@@ -9,6 +9,8 @@ source ~/.cache/carapace/init.nu
 
 alias ll = ls -a
 
+let-env PATH = ($env.PATH | prepend "/Users/bengiles/.cargo/bin")
+
 # For more information on defining custom themes, see
 # https://www.nushell.sh/book/coloring_and_theming.html
 # And here is the theme collection
