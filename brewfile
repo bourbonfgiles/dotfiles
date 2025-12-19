@@ -52,6 +52,7 @@ brew "tenv"
 brew "terraform-docs"
 brew "tldr"
 brew "typescript"
+brew "xclip" #Mac should ignore
 brew "yank"
 brew "yarn"
 brew "yazi"
