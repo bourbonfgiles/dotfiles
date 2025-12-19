@@ -16,3 +16,4 @@ eval "$(carapace _carapace)"
 
 echo "Sourced .zshrc"
 
+alias jira="jiratui ui -p PDEX"

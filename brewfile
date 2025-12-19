@@ -1,24 +1,26 @@
+
+
 # Taps
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
 tap "homebrew/bundle"
 tap "idoavrah/homebrew"
+tap "jorgerojas26/lazysql"
 tap "julien-cpsn/atac"
 tap "nikitabobko/tap"
-tap "vladimirvivien/oss-tools"
-tap "jorgerojas26/lazysql"
+# tap "vladimirvivien/oss-tools"   # no longer needed for ktop
 
-# Brew Packages
+# Brew Packages (CLI)
 brew "argocd"
 brew "azure-cli"
 brew "azure/kubelogin/kubelogin"
 brew "bat"
 brew "carapace"
 brew "cloudflare/cloudflare/cf-terraforming"
-brew "cloudflare/cloudflare/flarectl"
 brew "direnv"
 brew "duf"
 brew "eza"
+brew "flarectl"
 brew "fzf"
 brew "gh"
 brew "glances"
@@ -32,46 +34,70 @@ brew "jq"
 brew "julien-cpsn/atac/atac"
 brew "k9s"
 brew "kubecm"
-brew "kubectl"
+brew "kubernetes-cli"
+brew "ktop"
 brew "lazydocker"
 brew "lazygit"
 brew "lazysql"
 brew "lua"
 brew "neovim"
-brew "nodejs"
+brew "node"
 brew "nushell"
-#brew "opentofu"
-brew "python"
+brew "podman"
 brew "postgresql"
 brew "pre-commit"
+brew "python"
 brew "ripgrep"
 brew "rust"
 brew "starship"
 brew "stow"
-#brew "terraform"
-brew "tenv" #this manages terraform and tofu versions for you
+brew "tenv"
 brew "terraform-docs"
 brew "tldr"
 brew "typescript"
-brew "vladimirvivien/oss-tools/ktop"
 brew "yank"
 brew "yarn"
 brew "yazi"
 
-# Casks
-cask "alfred"
-cask "caffeine"
-cask "cloudflare-warp"
-cask "docker"
-cask "font-fira-code-nerd-font"
-cask "hammerspoon"
-cask "ghostty"
-cask "insomnia"
-#cask "microsoft-office" ops handles usually
-cask "pgadmin4"
-cask "postman"
-cask "sanesidebuttons"
-cask "slack"
-cask "spotify"
-cask "warp"
-cask "zen"
+# macOS (Casks)
+if OS.mac?
+  cask "alfred"
+  cask "caffeine"
+  cask "cloudflare-warp"
+  cask "font-fira-code-nerd-font"
+  cask "font-hack-nerd-font"
+  cask "ghostty"
+  cask "hammerspoon"
+  cask "insomnia"
+  cask "microsoft-office"
+  cask "neovide-app"
+  cask "pgadmin4"
+  cask "podman-desktop"
+  cask "postman"
+  cask "sanesidebuttons"
+  cask "slack"
+  cask "spotify"
+  cask "warp"
+  cask "zen"
+  cask "zoom"
+end
+
+# Linux (shared desktop apps, plus Steam/Lutris unless Bazzite)
+def bazzite?
+  return false unless OS.linux?
+  File.exist?("/etc/os-release") && File.read("/etc/os-release").include?("Bazzite")
+end
+
+if OS.linux?
+  flatpak "com.discordapp.Discord"
+  flatpak "com.rtosta.zapzap"
+  flatpak "com.spotify.Client"
+  flatpak "org.libreoffice.LibreOffice"
+  flatpak "org.mozilla.firefox"
+  flatpak "org.signal.Signal"
+
+  unless bazzite?
+    flatpak "com.valvesoftware.Steam"
+    flatpak "net.lutris.Lutris"
+  end
+end
