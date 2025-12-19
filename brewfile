@@ -87,6 +87,7 @@ def bazzite?
 end
 
 if OS.linux?
+  flatpak "app.ghostty.Ghostty"
   flatpak "com.discordapp.Discord"
   flatpak "com.rtosta.zapzap"
   flatpak "com.spotify.Client"
