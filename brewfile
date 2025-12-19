@@ -6,7 +6,6 @@ tap "idoavrah/homebrew"
 tap "jorgerojas26/lazysql"
 tap "julien-cpsn/atac"
 tap "nikitabobko/tap"
-# tap "vladimirvivien/oss-tools"   # no longer needed for ktop
 
 # Brew Packages (CLI)
 brew "argocd"
