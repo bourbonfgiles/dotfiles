@@ -1,3 +1,4 @@
+
 ################################################################################
 # History
 ################################################################################
@@ -9,16 +10,25 @@ SAVEHIST=20000
 # Homebrew PATH (macOS + Linux)
 # Ensure brewed tools are on PATH across shells (official shellenv method).     #
 ################################################################################
-eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 2>/dev/null || true
-eval "$(~/.linuxbrew/bin/brew shellenv)" 2>/dev/null || true
+# Warp often starts non‑login shells; pull in ~/.zprofile where brew shellenv lives.
+[[ -r "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
+
+################################################################################
+# Zsh completion system (must be before any compdef/completion usage)
+################################################################################
+autoload -Uz compinit
+compinit -i
 
 ################################################################################
 # Aliases
 ################################################################################
 alias ll='eza -l --group-directories-first --icons --color=always --header'
 alias z='zoxide'
-# alias xclip='xclip -selection clipboard'  # add after Brewfile installs xclip
+alias top='btm'
+alias dotfiles-check='zsh ~/.config/scripts/health_check.zsh'
+if command -v xclip >/dev/null; then
+  alias xclip='xclip -selection clipboard'
+fi
 
 ################################################################################
 # zoxide
@@ -44,11 +54,10 @@ fi
 ################################################################################
 # fzf (key-bindings + completion)
 ################################################################################
-if [[ -f "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh" ]]; then
-  source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
-fi
-if [[ -f "$(brew --prefix)/opt/fzf/shell/completion.zsh" ]]; then
-  source "$(brew --prefix)/opt/fzf/shell/completion.zsh"
+if command -v brew >/dev/null; then
+  FZF_PREFIX="$(brew --prefix)"
+  [[ -f "${FZF_PREFIX}/opt/fzf/shell/key-bindings.zsh" ]] && source "${FZF_PREFIX}/opt/fzf/shell/key-bindings.zsh"
+  [[ -f "${FZF_PREFIX}/opt/fzf/shell/completion.zsh"    ]] && source "${FZF_PREFIX}/opt/fzf/shell/completion.zsh"
 fi
 
 ################################################################################
@@ -70,9 +79,12 @@ fi
 export EZA_CONFIG_DIR="$HOME/.config/eza"
 
 ################################################################################
-# Prompt & Editor
+# Editor
 ################################################################################
-export EDITOR="nvim"
-export VISUAL="$EDITOR"
-
-echo "Sourced .zshrc"
+if command -v nvim >/dev/null; then
+  export EDITOR="nvim"
+  export VISUAL="nvim"
+elif command -v vim >/dev/null; then
+  export EDITOR="vim"
+  export VISUAL="vim"
+fi

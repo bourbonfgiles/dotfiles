@@ -2,8 +2,8 @@
 
 {
   # User information
-  home.username = "giles";
-  home.homeDirectory = "/home/giles";
+  home.username = "bengiles";
+  home.homeDirectory = "/Users/bengiles/";
   home.stateVersion = "24.11";  
 
   # Packages to be installed in the user's environment

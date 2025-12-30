@@ -92,8 +92,8 @@ clone_or_update() {
   fi
 }
 
-clone_or_update "git@github.com:bourbonfgiles/dotfiles.git"   "~/repos/personal/dotfiles"
-clone_or_update "https://github.com/eza-community/eza-themes.git" "~/repos/personal/eza-themes"
+clone_or_update "git@github.com:bourbonfgiles/dotfiles.git"   "$HOME/repos/personal/dotfiles"
+clone_or_update "https://github.com/eza-community/eza-themes.git" "$HOME/repos/personal/eza-themes"
 
 ################################################################################
 # Symlinks via GNU Stow

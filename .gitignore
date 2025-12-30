@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor backups
+*.bak
+*.swp
+*.swo
+*~
+
+# Neovim/Vim temporary files
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

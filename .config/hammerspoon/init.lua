@@ -1,6 +1,6 @@
--- Add a pathwatcher function to reload the config
+-- Pathwatcher to reload config
 function reloadConfig(files)
-    doReload = false
+    local doReload = false
     for _, file in pairs(files) do
         if file:sub(-4) == ".lua" then
             doReload = true
@@ -18,76 +18,67 @@ local hotkey = require "hs.hotkey"
 local window = require "hs.window"
 local screen = require "hs.screen"
 local alert = require "hs.alert"
+local caffeinate = require "hs.caffeinate"
 
--- Define a function to maximize the window minus the dock
+-- Window management functions
 local function maximizeWindow()
     local win = hs.window.focusedWindow()
-    if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(screenFrame)
-    end
+    if win then win:setFrame(win:screen():frame()) end
 end
 
--- Define a function to hide the window
 local function hideWindow()
     local win = hs.window.focusedWindow()
-    if win then
-        win:application():hide()
-    end
+    if win then win:application():hide() end
 end
 
--- Define a function to move window to the left half of the screen
 local function leftHalf()
     local win = hs.window.focusedWindow()
     if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(hs.geometry.rect(screenFrame.x, screenFrame.y, screenFrame.w / 2, screenFrame.h))
+        local f = win:screen():frame()
+        win:setFrame(hs.geometry.rect(f.x, f.y, f.w / 2, f.h))
     end
 end
-
--- Define a function to move window to the right half of the screen
 local function rightHalf()
     local win = hs.window.focusedWindow()
     if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(hs.geometry.rect(screenFrame.x + screenFrame.w / 2, screenFrame.y, screenFrame.w / 2, screenFrame.h))
+        local f = win:screen():frame()
+        win:setFrame(hs.geometry.rect(f.x + f.w / 2, f.y, f.w / 2, f.h))
     end
 end
 
--- Define functions to move window to quarters of the screen
 local function topLeft()
     local win = hs.window.focusedWindow()
     if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(hs.geometry.rect(screenFrame.x, screenFrame.y, screenFrame.w / 2, screenFrame.h / 2))
+        local f = win:screen():frame()
+        win:setFrame(hs.geometry.rect(f.x, f.y, f.w / 2, f.h / 2))
     end
 end
 
 local function topRight()
     local win = hs.window.focusedWindow()
     if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(hs.geometry.rect(screenFrame.x + screenFrame.w / 2, screenFrame.y, screenFrame.w / 2, screenFrame.h / 2))
+        local f = win:screen():frame()
+        win:setFrame(hs.geometry.rect(f.x + f.w / 2, f.y, f.w / 2, f.h / 2))
     end
 end
 
 local function bottomLeft()
     local win = hs.window.focusedWindow()
     if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(hs.geometry.rect(screenFrame.x, screenFrame.y + screenFrame.h / 2, screenFrame.w / 2, screenFrame.h / 2))
+        local f = win:screen():frame()
+        win:setFrame(hs.geometry.rect(f.x, f.y + f.h / 2, f.w / 2, f.h / 2))
     end
 end
 
 local function bottomRight()
     local win = hs.window.focusedWindow()
     if win then
-        local screenFrame = win:screen():frame()
-        win:setFrame(hs.geometry.rect(screenFrame.x + screenFrame.w / 2, screenFrame.y + screenFrame.h / 2, screenFrame.w / 2, screenFrame.h / 2))
+        local f = win:screen():frame()
+        win:setFrame(hs.geometry.rect(f.x + f.w / 2, f.y + f.h / 2, f.w / 2, f.h / 2))
     end
 end
 
--- Bind hotkeys to the functions
+-- Hotkey bindings
 hotkey.bind({"alt"}, "Up", maximizeWindow)
 hotkey.bind({"alt"}, "Down", hideWindow)
 hotkey.bind({"alt"}, "Left", leftHalf)
@@ -97,25 +88,58 @@ hotkey.bind({"alt", "shift"}, "Right", topRight)
 hotkey.bind({"alt", "shift"}, "Down", bottomLeft)
 hotkey.bind({"alt", "shift"}, "Up", bottomRight)
 
--- Load Caffeine spoon
-hs.loadSpoon("Caffeine")
+-- Jiggler and Caffeinate (Mon–Fri, 08:00–16:30)
+local jiggleInterval = 60 -- seconds
+local jigglerTimer = nil
+local caffeinateActive = false
 
--- Function to start Caffeine
-local function startCaffeine()
-    spoon.Caffeine:start()
-    hs.notify.new({title="Hammerspoon", informativeText="Caffeine activated"}):send()
-    hs.alert.show("Caffeine activated at " .. os.date("%X"))
+local function jiggleMouse()
+    local point = hs.mouse.absolutePosition()
+    hs.mouse.absolutePosition({x = point.x + 1, y = point.y})
+    hs.timer.usleep(100000)
+    hs.mouse.absolutePosition(point)
 end
 
--- Function to stop Caffeine
-local function stopCaffeine()
-    spoon.Caffeine:stop()
-    hs.notify.new({title="Hammerspoon", informativeText="Caffeine deactivated"}):send()
-    hs.alert.show("Caffeine deactivated at " .. os.date("%X"))
+local function isWithinSchedule()
+    local now = os.date("*t")
+    local hour, min, wday = now.hour, now.min, now.wday
+    return wday >= 2 and wday <= 6 and (hour > 8 or (hour == 8 and min >= 0)) and (hour < 16 or (hour == 16 and min <= 30))
 end
 
--- Schedule Caffeine to start at 8am
-hs.timer.doAt("08:00", startCaffeine)
+local function manageCaffeinate()
+    if isWithinSchedule() then
+        if not caffeinateActive then
+            caffeinate.set("displayIdle", true, true)
+            caffeinate.set("systemSleep", true, true)
+            caffeinateActive = true
+            hs.alert("☕️ Caffeinate enabled (scheduled)")
+        end
+    else
+        if caffeinateActive then
+            caffeinate.set("displayIdle", false, true)
+            caffeinate.set("systemSleep", false, true)
+            caffeinateActive = false
+            hs.alert("💤 Caffeinate disabled (outside schedule)")
+        end
+    end
+end
 
--- Schedule Caffeine to stop at 5:30pm
-hs.timer.doAt("17:30", stopCaffeine)
+local function scheduledJiggler()
+    manageCaffeinate()
+    if isWithinSchedule() then
+        if not jigglerTimer then
+            jigglerTimer = hs.timer.doEvery(jiggleInterval, jiggleMouse)
+            hs.alert("✅ Jiggler started (scheduled)")
+        end
+    else
+        if jigglerTimer then
+            jigglerTimer:stop()
+            jigglerTimer = nil
+            hs.alert("🛑 Jiggler stopped (outside schedule)")
+        end
+    end
+end
+
+-- Check every 5 minutes
+hs.timer.doEvery(300, scheduledJiggler)
+scheduledJiggler() -- Initial check
