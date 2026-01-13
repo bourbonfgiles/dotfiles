@@ -94,6 +94,7 @@ clone_or_update() {
 
 clone_or_update "git@github.com:bourbonfgiles/dotfiles.git"   "$HOME/repos/personal/dotfiles"
 clone_or_update "https://github.com/eza-community/eza-themes.git" "$HOME/repos/personal/eza-themes"
+clone_or_update "https://github.com/syl20bnr/spacemacs.git" "$HOME/.emacs.d"
 
 ################################################################################
 # Symlinks via GNU Stow
@@ -104,6 +105,7 @@ cd ~/repos/personal/dotfiles || { err "dotfiles directory missing"; exit 1; }
 mkdir -p ~/.config
 stow -t ~/.config .config
 ln -sf ~/repos/personal/dotfiles/.zshrc ~/.zshrc
+ln -sf ~/repos/personal/dotfiles/.spacemacs ~/.spacemacs
 log "Symlinks created."
 
 ################################################################################

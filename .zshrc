@@ -88,3 +88,14 @@ elif command -v vim >/dev/null; then
   export EDITOR="vim"
   export VISUAL="vim"
 fi
+
+################################################################################
+# Terraform version management (tenv)
+################################################################################
+export TENV_AUTO_INSTALL=true
+
+################################################################################
+# Secrets (not tracked in git)
+################################################################################
+[[ -f "$HOME/.zshrc.secrets" ]] && source "$HOME/.zshrc.secrets"
+export PATH="$HOME/bin:$PATH"

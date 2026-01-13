@@ -1,6 +1,7 @@
 # Taps
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
+tap "d12frosted/emacs-plus"
 tap "homebrew/bundle"
 tap "idoavrah/homebrew"
 tap "jorgerojas26/lazysql"
@@ -61,6 +62,13 @@ brew "yarn"
 brew "yazi"
 brew "zoxide"
 
+# Emacs & Language Servers
+brew "bash-language-server"
+brew "emacs-plus@30", args: ["with-native-comp"]
+brew "terraform-ls"
+brew "tflint"
+brew "yaml-language-server"
+
 # macOS (Casks)
 if OS.mac?
   cask "alfred"
@@ -80,6 +88,7 @@ if OS.mac?
   cask "slack"
   cask "spotify"
   cask "warp"
+  cask "zed"
   cask "zen"
   cask "zoom"
 end

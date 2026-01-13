@@ -23,8 +23,9 @@ This repository provides a reproducible setup for **macOS**, **Linux**, and
 ✔ Dotfiles cloned and symlinked via GNU Stow  
 ✔ Unified eza theme configuration across macOS and Linux  
 ✔ Homebrew taps, CLI tools, macOS casks, and Flatpaks installed declaratively  
-✔ Optional LazyVim installation for Neovim  
-✔ Post-bootstrap sanity checks for critical tools  
+✔ Spacemacs (Emacs distribution) with LSP support for DevOps workflows  
+✔ LazyVim installation for Neovim (quick file editing)  
+✔ Post-bootstrap sanity checks for critical tools
 
 ---
 
@@ -113,6 +114,9 @@ Your brewfile installs:
   `eza`, `fd`, `fzf`, `starship`, `ripgrep`, `bat`, `bottom`, `direnv`, 
   `carapace`, `go`, `node`, `python`, `rust`, `shellcheck`, `terraform-docs`, 
   `pre-commit`, `podman`, `postgresql`, `zoxide`, etc.
+- **Emacs & Language Servers**:
+  `emacs-plus@30` (native compilation enabled), `terraform-ls`, `tflint`,
+  `yaml-language-server`, `bash-language-server`
 - **macOS Casks**:
   Alfred, Ghostty, Hammerspoon, Slack, fonts, Postman, Warp, Zoom
 - **Flatpaks** (Linux):
@@ -125,6 +129,43 @@ Run manually if needed:
 cd ~/repos/personal/dotfiles
 brew bundle
 ```
+
+---
+
+################################################################################
+
+# Spacemacs Setup
+
+################################################################################
+
+Spacemacs is automatically cloned to `~/.emacs.d` during bootstrap.
+The `.spacemacs` config includes:
+
+- **LSP support** for Terraform, YAML, Bash, Python, TypeScript, Go, C#
+- **Helm-ag** for fast project-wide substring search (`SPC s p`)
+- **Treemacs** sidebar that auto-opens with current project
+- **Ivy posframe** for centered fuzzy finding (like Telescope)
+- **Centaur tabs** for buffer management
+- **OpenTofu** support (uses `tofu fmt` if available)
+- **Helm chart** YAML template recognition
+
+First launch:
+
+```bash
+emacs
+```
+
+Spacemacs will install all packages automatically. This takes a few minutes.
+
+**Key bindings:**
+- `SPC p p` - Switch project
+- `SPC s p` - Search in project (ripgrep)
+- `SPC f f` - Find file
+- `SPC b b` - Switch buffer
+- `SPC w /` - Split window right
+- `SPC w -` - Split window below
+
+**Note:** Neovim remains the default `$EDITOR` for quick file edits.
 
 ---
 
