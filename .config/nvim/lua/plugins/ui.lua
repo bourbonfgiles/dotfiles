@@ -12,8 +12,8 @@ return {
   {
     "folke/which-key.nvim",
     opts = {
-      defaults = {
-        ["<leader>t"] = { name = "+terminal" },
+      spec = {
+        { "<leader>t", group = "terminal" },
       },
     },
   },
