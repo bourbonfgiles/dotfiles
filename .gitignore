@@ -16,9 +16,22 @@
 [._]ss[a-gi-z]
 [._]sw[a-p]
 
+# Emacs temporary files
+*~
+\#*\#
+.\#*
+*.elc
+auto-save-list
+tramp
+.emacs.d/
+.spacemacs.env
+
 # Logs
 *.log
 
 # Temporary files
 tmp/
 temp/
+
+# Secrets (tokens, API keys, credentials)
+.zshrc.secrets
