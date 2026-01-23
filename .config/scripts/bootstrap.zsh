@@ -11,8 +11,11 @@ zsh "${REPO_ROOT}/bootstrap.zsh"
 # 2) Homebrew Bundle (taps, brew, casks, and flatpaks directly in Brewfile)
 zsh "${SCRIPT_DIR}/brew_setup.zsh"
 
-# 3) LazyVim (fresh runtime install from upstream)
+# 3) DNS over TLS configuration (WARP for macOS, systemd-resolved for Linux)
+zsh "${SCRIPT_DIR}/dns_setup.zsh"
+
+# 4) LazyVim (fresh runtime install from upstream)
 zsh "${SCRIPT_DIR}/lazyvim_setup.zsh"
 
-# 4) Post-bootstrap sanity checks
+# 5) Post-bootstrap sanity checks
 zsh "${SCRIPT_DIR}/post_bootstrap_checks.zsh"
