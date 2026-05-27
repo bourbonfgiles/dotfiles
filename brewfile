@@ -1,4 +1,5 @@
 # Taps
+tap "argoproj/tap"
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
 tap "d12frosted/emacs-plus"
@@ -61,6 +62,12 @@ brew "yank"
 brew "yarn"
 brew "yazi"
 brew "zoxide"
+
+# k9s Plugins
+brew "argoproj/tap/kubectl-argo-rollouts"
+brew "dive"
+brew "krew"
+brew "stern"
 
 # Emacs & Language Servers
 brew "bash-language-server"
