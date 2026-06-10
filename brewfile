@@ -1,19 +1,31 @@
+################################################################################
+# Brewfile - organized per OS.
+#
+#   Sections:  1) SHARED CLI    2) macOS only    3) Linux only
+#
+#   Linux GUI apps, gaming, and Ghostty are handled outside brew bundle:
+#     flatpaks         -> .config/scripts/flatpak_setup.zsh
+#     flatpaks-gaming  -> .config/scripts/gaming_setup.zsh
+#     ghostty          -> .config/scripts/ghostty_setup.zsh
+################################################################################
+
+
+################################################################################
+# 1) SHARED CLI  (macOS + Bazzite + Silverblue)
+################################################################################
+
 # Taps
 tap "argoproj/tap"
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
-tap "d12frosted/emacs-plus"
 tap "homebrew/bundle"
 tap "idoavrah/homebrew"
 tap "jorgerojas26/lazysql"
 tap "julien-cpsn/atac"
-tap "nikitabobko/tap"
 tap "Valkyrie00/homebrew-bbrew"
 
-# Brew Packages (CLI)
+# Core
 brew "argocd"
-brew "azure-cli"
-brew "azure/kubelogin/kubelogin"
 brew "bat"
 brew "bottom"
 brew "bbrew"
@@ -50,75 +62,84 @@ brew "pre-commit"
 brew "python"
 brew "ripgrep"
 brew "rust"
-brew "shellcheck"
 brew "starship"
 brew "stow"
 brew "tenv"
 brew "terraform-docs"
 brew "tldr"
 brew "typescript"
-brew "xclip" #Mac should ignore
 brew "yank"
 brew "yarn"
 brew "yazi"
 brew "zoxide"
+brew "zsh"
 
-# k9s Plugins
+# Cloud CLIs & scripting
+brew "awscli"
+brew "aws-vault"
+brew "azure-cli"
+brew "azure/kubelogin/kubelogin"
+brew "powershell"
+brew "uv"
+brew "pipx"
+
+# Linters & formatters
+brew "ruff"
+brew "shellcheck"
+brew "tflint"
+
+# Language servers
+brew "bash-language-server"
+brew "pyright"
+brew "terraform-ls"
+brew "yaml-language-server"
+
+# k9s / Kubernetes plugins
 brew "argoproj/tap/kubectl-argo-rollouts"
 brew "dive"
 brew "krew"
 brew "stern"
 
-# Emacs & Language Servers
-brew "bash-language-server"
-brew "emacs-plus@30", args: ["with-native-comp"]
-brew "terraform-ls"
-brew "tflint"
-brew "yaml-language-server"
 
-# macOS (Casks)
+################################################################################
+# 2) macOS only
+################################################################################
 if OS.mac?
-  cask "alfred"
-  cask "caffeine"
-  cask "cloudflare-warp"
+  tap "d12frosted/emacs-plus"
+  tap "nikitabobko/tap"
+
+  brew "emacs-plus@30", args: ["with-native-comp"]
+
+  # Fonts
   cask "font-fira-code-nerd-font"
   cask "font-hack-nerd-font"
+
+  # GUI apps (parity with flatpaks)
+  cask "discord"
   cask "ghostty"
-  cask "hammerspoon"
   cask "insomnia"
-  cask "microsoft-office"
   cask "neovide-app"
+  cask "onlyoffice"
   cask "pgadmin4"
   cask "podman-desktop"
   cask "postman"
-  cask "sanesidebuttons"
   cask "slack"
   cask "spotify"
   cask "warp"
   cask "zed"
   cask "zen"
   cask "zoom"
+  cask "firefox"
+  cask "microsoft-office"
+  # cask "cloudflare-warp"
 end
 
-# Linux (shared desktop apps, plus Steam/Lutris unless Bazzite)
-def bazzite?
-  return false unless OS.linux?
-  File.exist?("/etc/os-release") && File.read("/etc/os-release").include?("Bazzite")
-end
 
+################################################################################
+# 3) Linux only  (Bazzite + Silverblue)
+################################################################################
 if OS.linux?
-  flatpak "app.ghostty.Ghostty"
-  flatpak "com.discordapp.Discord"
-  flatpak "com.rtosta.zapzap"
-  flatpak "com.spotify.Client"
-  flatpak "org.gnome.Evolution"
-  flatpak "org.onlyoffice.desktopeditors"
-  flatpak "org.mozilla.firefox"
-  flatpak "org.signal.Signal"
-  flatpak "org.openrgb.OpenRGB"
-
-  unless bazzite?
-    flatpak "com.valvesoftware.Steam"
-    flatpak "net.lutris.Lutris"
-  end
+  brew "emacs"
+  brew "wl-clipboard"
+  brew "xclip"
 end

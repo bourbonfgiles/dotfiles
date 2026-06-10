@@ -35,3 +35,6 @@ temp/
 
 # Secrets (tokens, API keys, credentials)
 .zshrc.secrets
+
+# Large binaries / AppImages (not dotfiles)
+*.AppImage
