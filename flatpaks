@@ -1,0 +1,33 @@
+# Flathub application IDs installed on every Linux target (Bazzite + Silverblue)
+# by .config/scripts/flatpak_setup.zsh. One id per line; "#" comments allowed.
+# Gaming apps live in "flatpaks-gaming". Ghostty is handled by ghostty_setup.zsh.
+
+# Browsers
+app.zen_browser.zen
+org.mozilla.firefox
+
+# Comms
+com.discordapp.Discord
+org.signal.Signal
+com.rtosta.zapzap
+
+# Media / office / mail
+com.spotify.Client
+org.onlyoffice.desktopeditors
+org.gnome.Evolution
+
+# Dev / DevOps GUIs
+dev.zed.Zed
+dev.warp.Warp
+com.getpostman.Postman
+rest.insomnia.Insomnia
+org.pgadmin.pgadmin4
+io.podman_desktop.PodmanDesktop
+dev.neovide.neovide
+
+# Work comms
+com.slack.Slack
+us.zoom.Zoom
+
+# Hardware
+org.openrgb.OpenRGB

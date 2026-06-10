@@ -1,205 +1,94 @@
-################################################################################
-
 # Dotfiles
 
-################################################################################
+Reproducible setup for three targets that share one bootstrap and the same tooling:
 
-This repository provides a reproducible setup for **macOS**, **Linux**, and
-**Bazzite** environments using:
+- **macOS**
+- **Bazzite** (atomic Fedora, gaming built in)
+- **Fedora Silverblue** (atomic Fedora)
 
-- **Homebrew + Brewfile** for CLI tools, macOS casks, and Flatpaks
-- **Bootstrap scripts** for Git/SSH setup, dotfiles cloning, and symlink management
-- **LazyVim** for a modern Neovim experience (optional)
+## Model
 
----
+- **CLI tools → Homebrew** (`brewfile`), identical on every target.
+- **GUI apps → Homebrew Casks on macOS, native Flatpak on Linux** (`flatpaks`).
+- **Ghostty** → Homebrew cask on macOS; `scottames/ghostty` COPR layered with `rpm-ostree` on atomic Fedora (it is not on Flathub and has no official Linux brew formula).
+- **Gaming** → native on Bazzite; installed as Flatpaks (`flatpaks-gaming`) on Silverblue, which also prints an optional "rebase to `bazzite-gnome`" note.
 
-################################################################################
+Flatpaks are installed by a dedicated script (not `brew bundle`), which is the documented Bazzite approach and needs no root.
 
-# What You Get
+## Quick start
 
-################################################################################
-
-✔ Automated Git + SSH key setup (ed25519, GitHub-ready)  
-✔ Dotfiles cloned and symlinked via GNU Stow  
-✔ Unified eza theme configuration across macOS and Linux  
-✔ Homebrew taps, CLI tools, macOS casks, and Flatpaks installed declaratively  
-✔ Spacemacs (Emacs distribution) with LSP support for DevOps workflows  
-✔ LazyVim installation for Neovim (quick file editing)  
-✔ Post-bootstrap sanity checks for critical tools
-
----
-
-################################################################################
-
-# Quick Start
-
-################################################################################
-
-Clone the repo and run the orchestrator script:
+macOS ships `zsh`. On Bazzite/Silverblue it is not preinstalled, so install it first (Homebrew is already present on Bazzite):
 
 ```bash
+# Linux only: zsh is not preinstalled
+brew install zsh
+
 git clone git@github.com:bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles
 zsh ~/repos/personal/dotfiles/.config/scripts/bootstrap.zsh
 ```
 
-This will:
+The bootstrap installs Homebrew if missing, configures Git/SSH, stows dotfiles, runs `brew bundle`, then on Linux installs the Flatpaks, Ghostty, and (Silverblue) gaming apps, configures DNS-over-TLS, and installs LazyVim.
 
-- Configure Git & SSH keys
-- Clone dotfiles and eza-themes
-- Create symlinks via GNU Stow
-- Normalize eza theme path across macOS/Linux
-- Install all tools via `brew bundle` (including Flatpaks on Linux)
-- Optionally install LazyVim for Neovim
-- Run post-bootstrap checks
+## What each target gets
 
----
+| Area | macOS | Bazzite | Silverblue |
+| --- | --- | --- | --- |
+| CLI tools | Homebrew | Homebrew | Homebrew |
+| GUI apps | Casks | Flatpak | Flatpak |
+| Ghostty | Cask | COPR (`rpm-ostree`) | COPR (`rpm-ostree`) |
+| Gaming | — | native (in image) | Flatpaks (+ optional rebase) |
 
-################################################################################
+## App parity
 
-# Bootstrap Flow
+- **Both** (Cask on macOS / Flatpak on Linux): Ghostty, OnlyOffice, Zen, Spotify, Discord, Slack, Zoom, Zed, Warp, Postman, Insomnia, pgAdmin4, Podman Desktop, Neovide, Firefox.
+- **Linux only**: Signal, ZapZap (WhatsApp), Steam, OpenRGB, Evolution.
+- **macOS**: excludes Signal, WhatsApp, and Steam (work rules); keeps Microsoft Office alongside OnlyOffice.
 
-################################################################################
+## Bootstrap flow
 
 ```mermaid
 flowchart TD
-    A[User runs bootstrap.sh] --> B[bootstrap.zsh]
-    B --> C[Configure Git & SSH]
-    C --> D[Clone dotfiles & eza-themes]
-    D --> E[Create symlinks via GNU Stow]
-    E --> F[Setup eza theme path]
-    F --> G[brew_setup.sh]
-    G --> H[Install Homebrew packages]
-    H --> I[Install macOS casks]
-    H --> J[Install Linux flatpaks]
-    I --> K[lazyvim_setup.sh]
-    J --> K
-    K --> L[Backup existing nvim config]
-    L --> M[Clone LazyVim starter]
-    M --> N[post_bootstrap_checks.sh]
-    N --> O[Verify installations]
-    O --> P[Bootstrap Complete]
+  A[bootstrap.zsh] --> B[Git + SSH + stow + eza theme]
+  B --> C["brew bundle (CLI everywhere; Casks on macOS)"]
+  C --> D{OS?}
+  D -->|Linux| E[flatpak_setup: GUI apps]
+  E --> F[ghostty_setup: scottames COPR]
+  F --> G[gaming_setup: Silverblue only]
+  D -->|macOS| H[Casks already cover GUI + Ghostty]
+  G --> I[dns_setup → lazyvim_setup → checks]
+  H --> I
 ```
 
-################################################################################
-
-# Repository Structure
-
-################################################################################
+## Repository structure
 
 ```
-    .config/
-      hammerspoon - macOS customisations
-      k9s         - Kubernetes TUI
-      nvim        - LazyVim starter + customisations
-      scripts/    - Bootstrap and setup scripts
-      starship    - Starship prompt config
-    .zshrc        - ZSH configuration
-    brewfile      - Homebrew taps, formulae, casks, and Flatpaks
-    bootstrap.zsh - Core bootstrap (Git, SSH, clone, stow)
+brewfile          Homebrew packages, organized per OS (shared CLI / macOS / Linux)
+flatpaks          Flathub app IDs for Linux GUI apps
+flatpaks-gaming   Flathub gaming app IDs (Silverblue; native on Bazzite)
+bootstrap.zsh     Core bootstrap (Homebrew, Git, SSH, clone, stow)
+.config/
+  scripts/
+    bootstrap.zsh          Orchestrator (runs everything in order)
+    brew_setup.zsh         brew bundle
+    flatpak_setup.zsh      Installs flatpaks (Linux)
+    ghostty_setup.zsh      Installs Ghostty per OS
+    gaming_setup.zsh       Gaming Flatpaks + rebase note (Silverblue)
+    dns_setup.zsh          DNS-over-TLS (systemd-resolved on Linux)
+    lazyvim_setup.zsh      LazyVim starter
+    health_check.zsh       Post-install verification
+    lib_os.zsh             Shared OS detection
+  ghostty/ k9s/ nushell/ nvim/ starship/   App configs (stowed)
+.zshrc            ZSH configuration
+.spacemacs        Spacemacs configuration
 ```
 
----
+## Notes for immutable distros (Bazzite / Silverblue)
 
-################################################################################
+- **Stow** only writes symlinks into `$HOME` (writable on atomic systems), so it works normally — just install `stow` via Homebrew, not `rpm-ostree`.
+- **Neovim/LazyVim** installs its own language servers and linters via **Mason** (into `~/.local/share/nvim`). The brew language servers exist for CLI use and the occasional Spacemacs/Doom session.
+- **Ghostty** is layered with `rpm-ostree`, so a reboot is required after first install.
+- **Flatpaks** install at `--user` scope; apps already present (e.g. Bazzite's pre-installed set) are detected and skipped.
 
-# Brewfile Overview
+## Editors
 
-################################################################################
-
-Your brewfile installs:
-
-- **Taps**: Azure, Cloudflare, custom taps for DevOps tooling
-- **CLI Tools**:
-  `argocd`, `azure-cli`, `kubectl`, `helm`, `helmfile`, `lazygit`,
-  `eza`, `fd`, `fzf`, `starship`, `ripgrep`, `bat`, `bottom`, `direnv`, 
-  `carapace`, `go`, `node`, `python`, `rust`, `shellcheck`, `terraform-docs`, 
-  `pre-commit`, `podman`, `postgresql`, `zoxide`, etc.
-- **Emacs & Language Servers**:
-  `emacs-plus@30` (native compilation enabled), `terraform-ls`, `tflint`,
-  `yaml-language-server`, `bash-language-server`
-- **macOS Casks**:
-  Alfred, Ghostty, Hammerspoon, Slack, fonts, Postman, Warp, Zoom
-- **Flatpaks** (Linux):
-  Discord, Firefox, Signal, Spotify, LibreOffice, OpenRGB
-  *(Gaming apps like Steam/Lutris skipped on Bazzite)*
-
-Run manually if needed:
-
-```bash
-cd ~/repos/personal/dotfiles
-brew bundle
-```
-
----
-
-################################################################################
-
-# Spacemacs Setup
-
-################################################################################
-
-Spacemacs is automatically cloned to `~/.emacs.d` during bootstrap.
-The `.spacemacs` config includes:
-
-- **LSP support** for Terraform, YAML, Bash, Python, TypeScript, Go, C#
-- **Helm-ag** for fast project-wide substring search (`SPC s p`)
-- **Treemacs** sidebar that auto-opens with current project
-- **Ivy posframe** for centered fuzzy finding (like Telescope)
-- **Centaur tabs** for buffer management
-- **OpenTofu** support (uses `tofu fmt` if available)
-- **Helm chart** YAML template recognition
-
-First launch:
-
-```bash
-emacs
-```
-
-Spacemacs will install all packages automatically. This takes a few minutes.
-
-**Key bindings:**
-- `SPC p p` - Switch project
-- `SPC s p` - Search in project (ripgrep)
-- `SPC f f` - Find file
-- `SPC b b` - Switch buffer
-- `SPC w /` - Split window right
-- `SPC w -` - Split window below
-
-**Note:** Neovim remains the default `$EDITOR` for quick file edits.
-
----
-
-################################################################################
-
-# LazyVim Setup (Optional)
-
-################################################################################
-
-If you skip the script, install manually:
-
-```bash
-mv ~/.config/nvim{,.bak}
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-rm -rf ~/.config/nvim/.git
-nvim
-```
-
-Inside Neovim:
-
-```
-:LazyHealth
-```
-
----
-
-################################################################################
-
-# Why This Approach?
-
-################################################################################
-
-- **Homebrew** is cross-platform and works seamlessly on macOS and Linux (including Bazzite)
-- **brew bundle** supports taps, formulae, casks, and Flatpaks in one declarative file
-- **Scripts call scripts** for modularity and reproducibility
-- **LazyVim** provides a modern Neovim experience with minimal manual setup
-- **GNU Stow** ensures safe, reversible symlink management for dotfiles
+Neovim (LazyVim) is the primary editor and default `$EDITOR`. Spacemacs is cloned during bootstrap and remains available; language servers are on `$PATH` for it (and for Doom, if used).

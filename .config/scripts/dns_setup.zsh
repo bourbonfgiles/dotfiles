@@ -22,11 +22,10 @@ esac
 if $IS_MAC; then
   log "Configuring macOS DNS with Cloudflare WARP..."
   
-  # Check if WARP is installed
+  # Cloudflare WARP is optional now (cask commented out in the Brewfile).
   if [ ! -d "/Applications/Cloudflare WARP.app" ]; then
-    warn "Cloudflare WARP not installed. Install via: brew install --cask cloudflare-warp"
-    warn "After installation, enable WARP and set mode to 'WARP' (not just DNS-only)"
-    exit 1
+    warn "Cloudflare WARP not installed; skipping macOS DNS configuration."
+    exit 0
   fi
   
   # Check if WARP is running

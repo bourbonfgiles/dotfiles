@@ -199,7 +199,7 @@ fi
 if $IS_MAC; then
   echo -e "\n${BLUE}[macOS Specific]${NC}"
   
-  MACOS_CASKS=(alfred ghostty hammerspoon warp)
+  MACOS_CASKS=(ghostty warp zen onlyoffice)
   for cask in $MACOS_CASKS; do
     if brew list --cask "$cask" >/dev/null 2>&1; then
       pass "$cask installed"
@@ -218,7 +218,7 @@ if $IS_LINUX; then
   if command -v flatpak >/dev/null 2>&1; then
     pass "flatpak installed"
     
-    FLATPAKS=(org.mozilla.firefox com.spotify.Client org.openrgb.OpenRGB)
+    FLATPAKS=(app.zen_browser.zen com.discordapp.Discord com.spotify.Client org.signal.Signal)
     for pkg in $FLATPAKS; do
       if flatpak list | grep -q "$pkg"; then
         pass "$pkg installed"

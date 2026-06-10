@@ -24,6 +24,14 @@ eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 2>/dev/null || true
 eval "$(~/.linuxbrew/bin/brew shellenv)" 2>/dev/null || true
 
+# Install Homebrew if missing (fresh machine), then reload its shellenv.
+if ! command -v brew >/dev/null 2>&1; then
+  log "Installing Homebrew…"
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 2>/dev/null || true
+fi
+
 ################################################################################
 # Minimal packages (git + stow). All other tools come from Brewfile.           #
 ################################################################################
@@ -61,9 +69,12 @@ if [ ! -f ~/.ssh/id_ed25519 ]; then
   if $IS_MAC && command -v pbcopy >/dev/null 2>&1; then
     pbcopy < ~/.ssh/id_ed25519.pub
     log "SSH public key copied to clipboard (macOS)."
+  elif $IS_LINUX && command -v wl-copy >/dev/null 2>&1; then
+    wl-copy < ~/.ssh/id_ed25519.pub
+    log "SSH public key copied to clipboard (Wayland)."
   elif $IS_LINUX && command -v xclip >/dev/null 2>&1; then
     xclip -selection clipboard < ~/.ssh/id_ed25519.pub
-    log "SSH public key copied to clipboard (Linux)."
+    log "SSH public key copied to clipboard (X11)."
   else
     log "Copy this SSH public key into GitHub:"
     cat ~/.ssh/id_ed25519.pub
