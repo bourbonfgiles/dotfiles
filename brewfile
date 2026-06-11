@@ -119,7 +119,6 @@ if OS.mac?
   cask "ghostty"
   cask "insomnia"
   cask "neovide-app"
-  cask "onlyoffice"
   cask "pgadmin4"
   cask "podman-desktop"
   cask "postman"
