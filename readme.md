@@ -42,7 +42,7 @@ The bootstrap installs Homebrew if missing, configures Git/SSH, stows dotfiles, 
 
 - **Both** (Cask on macOS / Flatpak on Linux): Ghostty, OnlyOffice, Zen, Spotify, Discord, Slack, Zoom, Zed, Warp, Postman, Insomnia, pgAdmin4, Podman Desktop, Neovide, Firefox.
 - **Linux only**: Signal, ZapZap (WhatsApp), Steam, OpenRGB, Evolution.
-- **macOS**: excludes Signal, WhatsApp, and Steam (work rules); keeps Microsoft Office alongside OnlyOffice.
+- **macOS**: excludes Signal, WhatsApp, and Steam (work rules); Microsoft Office in place of OnlyOffice.
 
 ## Bootstrap flow
 
