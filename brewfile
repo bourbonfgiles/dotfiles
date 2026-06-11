@@ -18,7 +18,6 @@
 tap "argoproj/tap"
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
-tap "homebrew/bundle"
 tap "idoavrah/homebrew"
 tap "jorgerojas26/lazysql"
 tap "julien-cpsn/atac"
@@ -86,7 +85,6 @@ brew "pipx"
 # Linters & formatters
 brew "ruff"
 brew "shellcheck"
-brew "tflint"
 
 # Language servers
 brew "bash-language-server"
