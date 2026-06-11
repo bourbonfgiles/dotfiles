@@ -16,42 +16,74 @@ case "$OS" in
 esac
 
 ################################################################################
-# macOS DNS Configuration (Cloudflare WARP)
+# macOS DNS over TLS (configuration profile; no Cloudflare WARP needed)
 ################################################################################
 
 if $IS_MAC; then
-  log "Configuring macOS DNS with Cloudflare WARP..."
-  
-  # Cloudflare WARP is optional now (cask commented out in the Brewfile).
-  if [ ! -d "/Applications/Cloudflare WARP.app" ]; then
-    warn "Cloudflare WARP not installed; skipping macOS DNS configuration."
-    exit 0
-  fi
-  
-  # Check if WARP is running
-  if ! pgrep -x "Cloudflare WARP" > /dev/null; then
-    warn "Cloudflare WARP is not running. Starting..."
-    open -a "Cloudflare WARP"
-    sleep 3
-  fi
-  
-  # Verify WARP status
-  if command -v warp-cli >/dev/null 2>&1; then
-    WARP_STATUS=$(warp-cli status 2>/dev/null | head -1 || echo "Unknown")
-    log "WARP Status: $WARP_STATUS"
-    
-    if [[ "$WARP_STATUS" != *"Connected"* ]]; then
-      warn "WARP is not connected. Connecting..."
-      warp-cli connect || warn "Failed to connect WARP. Please connect manually."
-    fi
+  log "Enabling system DNS over TLS on macOS (Cloudflare 1.1.1.1)…"
+
+  # macOS has no CLI switch for system-wide DoT. The supported method is an
+  # Encrypted DNS configuration profile (Big Sur+). Generate one and open it;
+  # approve under System Settings ▸ General ▸ VPN & Device Management.
+  profile_dir="$(mktemp -d)"
+  profile="${profile_dir}/Cloudflare-DoT.mobileconfig"
+  uuid_payload="$(uuidgen)"
+  uuid_profile="$(uuidgen)"
+
+  cat > "$profile" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key>
+        <string>TLS</string>
+        <key>ServerName</key>
+        <string>one.one.one.one</string>
+        <key>ServerAddresses</key>
+        <array>
+          <string>1.1.1.1</string>
+          <string>1.0.0.1</string>
+          <string>2606:4700:4700::1111</string>
+          <string>2606:4700:4700::1001</string>
+        </array>
+      </dict>
+      <key>PayloadType</key>
+      <string>com.apple.dnsSettings.managed</string>
+      <key>PayloadIdentifier</key>
+      <string>com.bourbonfgiles.dotfiles.dns.${uuid_payload}</string>
+      <key>PayloadUUID</key>
+      <string>${uuid_payload}</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>PayloadDisplayName</key>
+      <string>Cloudflare DNS over TLS</string>
+    </dict>
+  </array>
+  <key>PayloadDisplayName</key>
+  <string>Cloudflare DNS over TLS</string>
+  <key>PayloadIdentifier</key>
+  <string>com.bourbonfgiles.dotfiles.dns.${uuid_profile}</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>${uuid_profile}</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>
+EOF
+
+  if open "$profile" 2>/dev/null; then
+    log "Approve 'Cloudflare DNS over TLS' in System Settings ▸ General ▸ VPN & Device Management."
   else
-    warn "warp-cli not found. Verify WARP is connected manually in the menu bar."
+    warn "Could not open the profile automatically; install it manually: $profile"
   fi
-  
-  log "macOS DNS configuration complete."
-  log "Safari will automatically use WARP's encrypted DNS."
-  log "To verify WARP is working, visit: https://1.1.1.1/help"
-  
+  exit 0
 fi
 
 ################################################################################
@@ -153,8 +185,7 @@ EOF
   fi
   
   log "Linux DNS over TLS configuration complete."
-  log "System DNS now uses Cloudflare DNS over TLS (1.1.1.1)"
-  log "Firefox with NordVPN extension will use NordVPN's DNS for browser traffic."
+  log "System DNS now uses Cloudflare DNS over TLS (1.1.1.1)."
   log ""
   
   if $IS_BAZZITE; then
