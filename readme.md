@@ -100,3 +100,5 @@ dconf/            Tracked GNOME dconf (tilingshell.conf, dash-to-dock.conf)
 ## Editors
 
 Neovim (LazyVim) is the primary editor and default `$EDITOR`; its config is stowed from `.config/nvim` and synced (never overwritten) by `nvim_setup.zsh`. Spacemacs is cloned during bootstrap and remains available; language servers are on `$PATH` for it (and for Doom, if used).
+## Shell & cross-platform
+`zsh` is the login shell on every target — native on macOS, set via `usermod` on Bazzite/Silverblue (which ship no `chsh`). `.zshrc` loads Homebrew's `shellenv` directly (Apple Silicon `/opt/homebrew`, Intel `/usr/local`, Linux `/home/linuxbrew`) so the same brewed CLI tools are on `PATH` in both login and non-login shells (Warp/Ghostty start non-login). Prompt/completion init is `command -v`-guarded, so the config itself is OS-agnostic. The platform-specific pieces live in the setup scripts, not `.zshrc`: GUI apps (casks vs Flatpak), Ghostty/Warp (casks vs rpm-ostree), Nerd Fonts (casks vs `fonts_setup.zsh`), and Albert's launcher hotkey (a GNOME custom shortcut, since Wayland blocks app-level global hotkeys).

@@ -11,6 +11,16 @@ SAVEHIST=20000
 # Ensure brewed tools are on PATH across shells (official shellenv method).     #
 ################################################################################
 # Warp often starts non‑login shells; pull in ~/.zprofile where brew shellenv lives.
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+elif [[ -x "$HOME/.linuxbrew/bin/brew" ]]; then
+  eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
+fi
+# Also source ~/.zprofile if present (local, non-tracked additions).
 [[ -r "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
 
 ################################################################################
