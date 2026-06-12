@@ -38,6 +38,35 @@ gpgkey=${base}repodata/repomd.xml.key
 EOF
 }
 
+# Albert's docker plugin shells out to `docker`; provide the podman compat shim
+# (docker → podman) so it works without Docker installed.
+ensure_podman_docker() {
+  is_mac && return 0
+  command -v docker >/dev/null 2>&1 && return 0
+  command -v podman >/dev/null 2>&1 || return 0
+  if [[ -f /run/ostree-booted ]]; then
+    log "Adding podman-docker (docker → podman) via rpm-ostree…"
+    sudo rpm-ostree install --idempotent podman-docker || warn "podman-docker layer failed."
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf -y install podman-docker || warn "podman-docker install failed."
+  fi
+}
+
+# Seed Albert's config on a fresh machine so the listed plugins are enabled
+# without clicking. Never overwrites an existing config.
+if ! is_mac; then
+  _tmpl="${0:A:h:h:h}/albert/config"
+  _dest="${HOME}/.config/albert/config"
+  if [[ -r "$_tmpl" && ! -f "$_dest" ]]; then
+    mkdir -p "${HOME}/.config/albert" && cp "$_tmpl" "$_dest" \
+      && log "Seeded Albert config (enabled plugins) from repo template."
+  fi
+fi
+
+# docker → podman compat for Albert's docker plugin (runs before the install
+# branches, which may exit early when Albert is already present).
+ensure_podman_docker
+
 case "$(os_kind)" in
   mac)
     log "macOS: Albert is Linux-only (use Raycast/Alfred); skipping."

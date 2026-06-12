@@ -26,6 +26,7 @@ fi
 
 DASH="dash-to-dock@micxgx.gmail.com"
 TILING="tilingshell@ferrarodomenico.com"
+FOCUS="steal-my-focus-window@steal-my-focus-window"
 EXT_DIR="${HOME}/.local/share/gnome-shell/extensions"
 DCONF_DIR="${REPO_ROOT}/dconf"
 
@@ -85,8 +86,12 @@ if ! install_ext "$TILING"; then
   install_tilingshell_from_github || warn "Install Tiling Shell manually: https://extensions.gnome.org/extension/7065/tiling-shell/"
 fi
 
+# 3b) Steal My Focus Window: on Wayland, focus a window demanding attention
+# (e.g. re-launching Signal via Albert) instead of just wiggling its icon.
+install_ext "$FOCUS" || warn "Install 'Steal My Focus Window' manually: https://extensions.gnome.org/extension/6385/steal-my-focus-window/"
+
 # 4) Enable. On Wayland newly installed extensions only load after logout/login.
-for uuid in "$DASH" "$TILING"; do
+for uuid in "$DASH" "$TILING" "$FOCUS"; do
   ext_present "$uuid" || continue
   if gnome-extensions enable "$uuid" 2>/dev/null; then
     log "Enabled $uuid"
@@ -131,6 +136,13 @@ if command -v albert >/dev/null 2>&1; then
   dconf write "${kb}binding" "'<Super>space'"
   log "Albert: bound Super+Space → 'albert toggle'."
 fi
+
+# Fast key repeat (e.g. StarCraft II rapid-fire): short delay before repeat
+# starts + minimal interval between repeats. Lower delay = starts sooner;
+# lower repeat-interval = more repeats per second.
+gsettings set org.gnome.desktop.peripherals.keyboard repeat true 2>/dev/null || true
+gsettings set org.gnome.desktop.peripherals.keyboard delay 200 2>/dev/null || true
+gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 8 2>/dev/null || true
 
 log "GNOME setup done. Log out and back in to load newly installed extensions."
 log "If the Tiling Shell layout didn't stick (first run initialises defaults), re-run this script after logging in."
