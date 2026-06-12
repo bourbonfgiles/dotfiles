@@ -174,6 +174,7 @@ zsh "${SCRIPTS}/brew_setup.zsh" || warn "brew_setup had issues."
 zsh "${SCRIPTS}/flatpak_setup.zsh" || warn "flatpak_setup had issues."
 zsh "${SCRIPTS}/ghostty_setup.zsh" || warn "ghostty_setup had issues."
 zsh "${SCRIPTS}/warp_setup.zsh"    || warn "warp_setup had issues."
+zsh "${SCRIPTS}/albert_setup.zsh"  || warn "albert_setup had issues."
 zsh "${SCRIPTS}/gaming_setup.zsh"  || warn "gaming_setup had issues."
 
 # Nerd Fonts (Linux; macOS uses Brewfile casks). Non-fatal.

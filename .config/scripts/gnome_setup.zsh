@@ -110,5 +110,27 @@ apply_dconf "/org/gnome/shell/extensions/dash-to-dock/" "${DCONF_DIR}/dash-to-do
 dconf write /org/gnome/desktop/wm/keybindings/maximize "@as []" 2>/dev/null || true
 dconf write /org/gnome/desktop/wm/keybindings/unmaximize "@as []" 2>/dev/null || true
 
+# Albert launcher: Wayland blocks app-level global hotkeys, so bind a GNOME
+# custom shortcut to `albert toggle` (Super+Space, ⌘-Space parity). Only if
+# Albert is installed; appends without clobbering existing custom shortcuts.
+if command -v albert >/dev/null 2>&1; then
+  mk="org.gnome.settings-daemon.plugins.media-keys"
+  kb="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/albert/"
+  gsettings set org.gnome.desktop.wm.keybindings switch-input-source "[]" 2>/dev/null || true
+  gsettings set org.gnome.desktop.wm.keybindings switch-input-source-backward "[]" 2>/dev/null || true
+  cur="$(gsettings get $mk custom-keybindings 2>/dev/null)"
+  if [[ "$cur" != *"$kb"* ]]; then
+    if [[ "$cur" == *"[]"* ]]; then
+      gsettings set $mk custom-keybindings "['$kb']"
+    else
+      gsettings set $mk custom-keybindings "${cur%]}, '$kb']"
+    fi
+  fi
+  dconf write "${kb}name" "'Albert'"
+  dconf write "${kb}command" "'albert toggle'"
+  dconf write "${kb}binding" "'<Super>space'"
+  log "Albert: bound Super+Space → 'albert toggle'."
+fi
+
 log "GNOME setup done. Log out and back in to load newly installed extensions."
 log "If the Tiling Shell layout didn't stick (first run initialises defaults), re-run this script after logging in."

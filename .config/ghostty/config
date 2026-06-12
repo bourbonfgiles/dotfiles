@@ -1,2 +1,4 @@
+theme = Catppuccin Mocha
+font-size = 10
 keybind = Home=scroll_to_top
 keybind = End=scroll_to_bottom
