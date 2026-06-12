@@ -142,7 +142,7 @@ fi
 # lower repeat-interval = more repeats per second.
 gsettings set org.gnome.desktop.peripherals.keyboard repeat true 2>/dev/null || true
 gsettings set org.gnome.desktop.peripherals.keyboard delay 200 2>/dev/null || true
-gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15 2>/dev/null || true
+gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 8 2>/dev/null || true
 
 log "GNOME setup done. Log out and back in to load newly installed extensions."
 log "If the Tiling Shell layout didn't stick (first run initialises defaults), re-run this script after logging in."
