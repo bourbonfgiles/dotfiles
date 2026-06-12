@@ -36,3 +36,15 @@ if command -v nvim >/dev/null 2>&1; then
 else
   warn "nvim not on PATH yet; skipping plugin sync (brew bundle installs neovim)."
 fi
+
+# Neovide on Linux is a Flatpak whose sandbox uses a private XDG config dir, so
+# its bundled nvim ignores ~/.config/nvim. Point the sandbox config at the host
+# repo config so Neovide looks like terminal Neovim. (Plugins install into the
+# flatpak's own data dir on first launch to avoid nvim-version mismatches.)
+if command -v flatpak >/dev/null 2>&1 && flatpak info dev.neovide.neovide >/dev/null 2>&1; then
+  neovide_cfg="${HOME}/.var/app/dev.neovide.neovide/config"
+  mkdir -p "$neovide_cfg"
+  rm -rf "$neovide_cfg/nvim"
+  ln -sfn "$HOME/.config/nvim" "$neovide_cfg/nvim"
+  log "Neovide: linked sandbox config → ~/.config/nvim"
+fi
