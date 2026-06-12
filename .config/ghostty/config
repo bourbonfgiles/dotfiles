@@ -5,7 +5,7 @@ keybind = End=scroll_to_bottom
 
 # Clipboard: Linux has two clipboards (PRIMARY/selection vs CLIPBOARD) and Ctrl
 # is overloaded, unlike macOS (⌘ + one clipboard). Make copy/paste consistent:
-copy-on-select = clipboard                      # selection also goes to the system clipboard
-right-click-action = copy-or-paste              # right-click copies if text selected, else pastes
-keybind = performable:ctrl+c=copy_to_clipboard  # Ctrl+C copies if text selected, else sends SIGINT
-keybind = ctrl+v=paste_from_clipboard           # Ctrl+V pastes (Ctrl+Shift+C/V still work too)
+copy-on-select = clipboard
+right-click-action = copy-or-paste
+keybind = performable:ctrl+c=copy_to_clipboard
+keybind = ctrl+v=paste_from_clipboard
