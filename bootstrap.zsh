@@ -176,6 +176,9 @@ zsh "${SCRIPTS}/ghostty_setup.zsh" || warn "ghostty_setup had issues."
 zsh "${SCRIPTS}/warp_setup.zsh"    || warn "warp_setup had issues."
 zsh "${SCRIPTS}/gaming_setup.zsh"  || warn "gaming_setup had issues."
 
+# Nerd Fonts (Linux; macOS uses Brewfile casks). Non-fatal.
+zsh "${SCRIPTS}/fonts_setup.zsh"   || warn "fonts_setup had issues."
+
 # Make zsh the default login shell (Linux). Non-fatal.
 zsh "${SCRIPTS}/shell_setup.zsh"   || warn "shell_setup had issues."
 

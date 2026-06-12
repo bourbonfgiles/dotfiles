@@ -105,5 +105,10 @@ apply_dconf() {
 apply_dconf "/org/gnome/shell/extensions/tilingshell/" "${DCONF_DIR}/tilingshell.conf"
 apply_dconf "/org/gnome/shell/extensions/dash-to-dock/" "${DCONF_DIR}/dash-to-dock.conf"
 
+# Free GNOME's native Super+Up/Down so Tiling Shell's move-window-center and
+# span-window-all-tiles bindings (Super+Up/Down) aren't intercepted by maximize.
+dconf write /org/gnome/desktop/wm/keybindings/maximize "@as []" 2>/dev/null || true
+dconf write /org/gnome/desktop/wm/keybindings/unmaximize "@as []" 2>/dev/null || true
+
 log "GNOME setup done. Log out and back in to load newly installed extensions."
 log "If the Tiling Shell layout didn't stick (first run initialises defaults), re-run this script after logging in."
