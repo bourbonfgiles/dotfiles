@@ -38,3 +38,10 @@ temp/
 
 # Large binaries / AppImages (not dotfiles)
 *.AppImage
+
+# Python
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/

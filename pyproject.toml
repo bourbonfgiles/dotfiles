@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dotfiles"
+version = "0.1.0"
+description = "Cross-platform dotfiles bootstrap (macOS, Bazzite, Silverblue)."
+readme = "readme.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "bourbonfgiles" }]
+# Runtime is standard-library only: the bootstrap must run on a fresh machine
+# before any third-party packages can be installed.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["black", "isort", "ruff", "mypy", "pytest"]
+
+[project.scripts]
+dotfiles-bootstrap = "dotfiles.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # Black owns line length
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
