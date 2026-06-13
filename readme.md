@@ -68,7 +68,6 @@ flatpaks-gaming   Flathub gaming app IDs (Silverblue; native on Bazzite)
 bootstrap.sh      Entry point (POSIX sh): ensures Homebrew + Python, then runs `python -m dotfiles`
 pyproject.toml    Python packaging + tooling config (black, isort, ruff, mypy, pytest)
 dconf/            Tracked GNOME dconf (tilingshell.conf, dash-to-dock.conf)
-albert/           Tracked Albert config seeded onto fresh machines
 src/dotfiles/     The bootstrap package (standard-library only)
   __main__.py       CLI entry point (argparse)
   bootstrap.py      Orchestrator: ordered, fault-tolerant steps
@@ -79,7 +78,7 @@ src/dotfiles/     The bootstrap package (standard-library only)
                     fonts, neovim, checks)
 tests/            pytest suite (platform + settings)
 .config/
-  ghostty/ k9s/ nushell/ nvim/ starship/   App configs (stowed)
+  albert/ ghostty/ k9s/ nushell/ nvim/ starship/   App configs (stowed)
 .zshrc            ZSH configuration
 .spacemacs        Spacemacs configuration
 ```

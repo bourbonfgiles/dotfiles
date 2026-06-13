@@ -1,8 +1,6 @@
-"""Install Albert via OBS repo (rpm-ostree); podman-docker compat; seed config."""
+"""Install Albert via OBS repo (rpm-ostree); podman-docker compat."""
 
 from __future__ import annotations
-
-import shutil
 
 from ..config.settings import Settings
 from ..utils import platform, shell, system
@@ -51,23 +49,11 @@ def ensure_podman_docker() -> None:
         shell.run(["sudo", "dnf", "-y", "install", "podman-docker"], check=False)
 
 
-def seed_config(settings: Settings) -> None:
-    """Seed ~/.config/albert/config from the repo template on fresh machines."""
-    if platform.is_mac():
-        return
-    dest = settings.config_home / "albert" / "config"
-    if settings.albert_template.is_file() and not dest.exists():
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(settings.albert_template, dest)
-        logger.info("Seeded Albert config (enabled plugins) from repo template.")
-
-
 def run(settings: Settings) -> None:
-    """Install Albert and its docker compat + seed plugin config."""
+    """Install Albert and its docker compat (config is stowed into ~/.config/albert)."""
     if platform.is_mac():
         logger.info("macOS: Albert is Linux-only (use Raycast/Alfred); skipping.")
         return
-    seed_config(settings)
     ensure_podman_docker()
     kind = platform.os_kind()
     target = _obs_target()

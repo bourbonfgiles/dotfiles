@@ -47,11 +47,6 @@ class Settings:
         """Tracked GNOME dconf snippets."""
         return self.repo_root / "dconf"
 
-    @property
-    def albert_template(self) -> Path:
-        """Tracked Albert config seeded onto fresh machines."""
-        return self.repo_root / "albert" / "config"
-
     # '@classmethod' receives the class itself ('cls'), not an instance. It's a
     # factory: a tidy way to build and return a configured Settings.
     @classmethod
