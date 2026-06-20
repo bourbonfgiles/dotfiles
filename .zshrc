@@ -32,7 +32,7 @@ compinit -i
 ################################################################################
 # Aliases
 ################################################################################
-alias ll='eza -l --group-directories-first --icons --color=always --header'
+alias ll='eza -la --group-directories-first --icons --color=always --header'
 alias z='zoxide'
 alias top='btm'
 alias dotfiles-check='zsh ~/.config/scripts/health_check.zsh'
