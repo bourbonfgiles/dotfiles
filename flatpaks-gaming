@@ -1,6 +1,7 @@
 # Gaming Flatpaks installed on Silverblue / non-Bazzite Fedora Atomic by
 # .config/scripts/gaming_setup.zsh. Bazzite ships these natively, so it is
 # skipped there. One id per line; "#" comments allowed.
+com.discordapp.Discord
 
 com.valvesoftware.Steam
 net.lutris.Lutris

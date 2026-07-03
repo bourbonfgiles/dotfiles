@@ -41,10 +41,11 @@ It installs Homebrew and Python if missing, configures Git/SSH, stows the dotfil
 
 ## App parity
 
-- **Both** (Cask on macOS / Flatpak on Linux): OnlyOffice, Zen, Spotify, Discord, Slack, Zoom, Zed, Postman, Insomnia, pgAdmin4, Podman Desktop, Neovide.
+- **Both** (Cask on macOS / Flatpak on Linux): OnlyOffice, Zen, Spotify, Slack, Zoom, Zed, Postman, Insomnia, pgAdmin4, Podman Desktop, Neovide.
 - **Terminals** (Cask on macOS / official repo via `rpm-ostree` on Linux — neither is on Flathub): Ghostty, Warp.
-- **Linux only**: Signal, ZapZap (WhatsApp), Steam, OpenRGB, Evolution.
-- **macOS**: excludes Signal, WhatsApp, and Steam (work rules); Microsoft Office in place of OnlyOffice.
+- **Linux only**: Signal, ZapZap (WhatsApp), OpenRGB, Evolution.
+- **Gaming profile** (`flatpaks-gaming`): Discord, Steam, Lutris, Heroic, Bottles, ProtonUp-Qt.
+- **macOS**: excludes Signal, WhatsApp, Discord, and Steam (work rules); Microsoft Office in place of OnlyOffice.
 
 ## Bootstrap flow
 

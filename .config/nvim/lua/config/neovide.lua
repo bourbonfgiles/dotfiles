@@ -1,7 +1,7 @@
 -- Neovide specific configuration
 if vim.g.neovide then
   -- Font size
-  vim.o.guifont = "JetBrainsMono Nerd Font:h10"
+  vim.o.guifont = "JetBrainsMono Nerd Font:h14"
 
   -- Window blur
   vim.g.neovide_window_blurred = true
@@ -31,7 +31,7 @@ if vim.g.neovide then
   vim.g.neovide_cursor_vfx_particle_speed = 10.0
 
   -- Refresh rate
-  vim.g.neovide_refresh_rate = 60
+  vim.g.neovide_refresh_rate = 240
   vim.g.neovide_refresh_rate_idle = 5
 
   -- Scroll animation

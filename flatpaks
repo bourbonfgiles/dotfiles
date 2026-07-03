@@ -7,7 +7,6 @@
 app.zen_browser.zen
 
 # Comms
-com.discordapp.Discord
 org.signal.Signal
 com.rtosta.zapzap
 

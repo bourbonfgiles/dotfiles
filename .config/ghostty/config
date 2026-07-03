@@ -1,5 +1,5 @@
 theme = Catppuccin Mocha
-font-size = 10
+font-size = 14
 keybind = Home=scroll_to_top
 keybind = End=scroll_to_bottom
 
