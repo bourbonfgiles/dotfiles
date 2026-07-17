@@ -1,4 +1,4 @@
-theme = Catppuccin Mocha
+theme = Programmer 
 font-size = 14
 keybind = Home=scroll_to_top
 keybind = End=scroll_to_bottom
@@ -9,3 +9,24 @@ copy-on-select = clipboard
 right-click-action = copy-or-paste
 keybind = performable:ctrl+c=copy_to_clipboard
 keybind = ctrl+v=paste_from_clipboard
+
+# --- QUAKE MODE (QUICK TERMINAL) ---
+# Maps Command + ` to globally toggle the dropdown terminal
+keybind = global:cmd+grave_accent=toggle_quick_terminal
+
+# --- QUICK TERMINAL CUSTOMIZATION ---
+# Set the dropdown height (60% of the screen height works best)
+quick-terminal-size = 60%
+
+# Screen position (top, bottom, left, right)
+quick-terminal-position = top
+
+# Automatically slide away when you click onto another application
+quick-terminal-autohide = true
+
+# --- TAB BEHAVIOUR ---
+# Tabs appear at the top of the window
+tab-style = top
+
+# Disable dimming for inactive split panes
+unfocused-split-opacity = 1.0
