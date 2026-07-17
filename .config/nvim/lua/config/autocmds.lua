@@ -15,3 +15,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
     })
   end,
 })
+
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  pattern = "*/.buddy/*.yml",
+  callback = function()
+    vim.b.autoformat = false
+    vim.diagnostic.enable(false, { bufnr = 0 })
+  end,
+})
