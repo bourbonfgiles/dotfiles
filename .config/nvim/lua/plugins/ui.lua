@@ -14,6 +14,8 @@ return {
     opts = {
       spec = {
         { "<leader>t", group = "terminal" },
+        { "<leader>a", group = "ai (kiro)" },
+        { "<leader>R", group = "rest (http)" },
       },
     },
   },
