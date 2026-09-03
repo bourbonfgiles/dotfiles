@@ -1,0 +1,6 @@
+# Modular Ghostty config. Fragments live beside this file and are included in
+# order so appearance → input → quake → platform can be edited independently.
+config-file = appearance
+config-file = input
+config-file = quake
+config-file = platform

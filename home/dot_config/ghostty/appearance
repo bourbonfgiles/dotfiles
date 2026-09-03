@@ -1,0 +1,24 @@
+# Smyck: Ghostty ships this palette built-in. Keep terminal + editor aligned.
+theme = Smyck
+font-size = 14
+
+# Nudge dim/low-contrast ANSI colours until they're legible against the
+# background, without flattening the palette (1.0 = no adjustment).
+minimum-contrast = 1.1
+
+# Frosted background, similar to Warp's translucent window.
+background-opacity = 0.96
+background-blur = 20
+
+# Steady block cursor is less distracting than a blinking bar during long reads.
+cursor-style = block
+cursor-style-blink = false
+mouse-hide-while-typing = true
+
+# Breathing room around the grid; balance splits padding evenly.
+window-padding-x = 8
+window-padding-y = 6
+window-padding-balance = true
+
+# Disable dimming for inactive split panes
+unfocused-split-opacity = 1.0

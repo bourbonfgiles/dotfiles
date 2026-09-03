@@ -1,7 +1,8 @@
 # Flathub application IDs installed on every Linux target (Bazzite + Silverblue)
-# by .config/scripts/flatpak_setup.zsh. One id per line; "#" comments allowed.
+# by src/dotfiles/services/flatpak.py. One id per line; "#" comments allowed.
 # Gaming apps live in "flatpaks-gaming". Ghostty and Warp are not on Flathub and
-# are handled by ghostty_setup.zsh and warp_setup.zsh (rpm-ostree layering).
+# are handled by the ghostty/warp services (rpm-ostree layering).
+# Flatpak overrides are tracked under home/dot_local/share/flatpak/overrides.
 
 # Browsers
 app.zen_browser.zen

@@ -1,0 +1,51 @@
+# Smyck skin (aligned with Ghostty Smyck palette)
+k9s:
+  body:
+    fgColor: "#f7f7f7"
+    bgColor: "#1b1b1b"
+  logoColor: "#ba8acc"
+  info:
+    fgColor: "#62a3c4"
+    sectionColor: "#f7f7f7"
+  frame:
+    border:
+      fgColor: "#7a7a7a"
+      focusColor: "#62a3c4"
+  menu:
+    fgColor: "#f7f7f7"
+    keyColor: "#c4a500"
+    numKeyColor: "#c4a500"
+  crumbs:
+    fgColor: "#f7f7f7"
+    bgColor: "#000000"
+    activeColor: "#207383"
+  status:
+    newColor: "#62a3c4"
+    modifyColor: "#ba8acc"
+    addColor: "#7da900"
+    errorColor: "#b84131"
+    highlightColor: "#c4a500"
+    killColor: "#7a7a7a"
+    completedColor: "#7a7a7a"
+  title:
+    fgColor: "#f7f7f7"
+    bgColor: "#000000"
+    highlightColor: "#c4a500"
+    counterColor: "#ba8acc"
+    filterColor: "#62a3c4"
+  views:
+    table:
+      fgColor: "#f7f7f7"
+      bgColor: "#1b1b1b"
+      cursorColor: "#207383"
+    header:
+      fgColor: "#f7f7f7"
+      bgColor: "#1b1b1b"
+      sorterColor: "#62a3c4"
+    yaml:
+      keyColor: "#62a3c4"
+      colonColor: "#ba8acc"
+      valueColor: "#f7f7f7"
+    logs:
+      fgColor: "#f7f7f7"
+      bgColor: "#1b1b1b"

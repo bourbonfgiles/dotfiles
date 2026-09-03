@@ -1,4 +1,4 @@
-"""DNS over TLS: a Cloudflare profile on macOS; systemd-resolved on Linux."""
+"""DNS over TLS: Cloudflare profile on macOS; resolved drop-ins on Linux."""
 
 from __future__ import annotations
 
@@ -11,20 +11,6 @@ from ..utils import platform, shell, system
 from ..utils.logging import get_logger
 
 logger = get_logger("dns")
-
-_RESOLVED_CONF = "/etc/systemd/resolved.conf"
-_RESOLVED_BODY = (
-    "[Resolve]\n"
-    "DNS=1.1.1.1 1.0.0.1 2606:4700:4700::1111 2606:4700:4700::1001\n"
-    "FallbackDNS=8.8.8.8 8.8.4.4\n"
-    "Domains=~.\n"
-    "DNSOverTLS=yes\n"
-    "DNSSEC=allow-downgrade\n"
-    "DNSStubListener=yes\n"
-    "Cache=yes\n"
-    "CacheFromLocalhost=no\n"
-)
-_NM_DNS = "[main]\ndns=systemd-resolved\nsystemd-resolved=true\n"
 
 
 def _macos_profile() -> None:
@@ -69,13 +55,34 @@ def _macos_profile() -> None:
         logger.warning("Could not open the profile; install it manually: %s", path)
 
 
-def _linux_resolved() -> None:
-    """Point systemd-resolved at Cloudflare DNS over TLS."""
-    logger.info("Configuring systemd-resolved for DNS over TLS…")
-    system.sudo_write(_RESOLVED_CONF, _RESOLVED_BODY)
-    if shell.command_exists("nmcli"):
+def _install_dropins(settings: Settings) -> None:
+    """Copy tracked resolved/NetworkManager drop-ins into /etc."""
+    resolved_src = settings.system_dir / "resolved.conf.d"
+    nm_src = settings.system_dir / "NetworkManager" / "conf.d"
+
+    if resolved_src.is_dir():
+        shell.run(["sudo", "mkdir", "-p", "/etc/systemd/resolved.conf.d"], check=False)
+        for conf in sorted(resolved_src.glob("*.conf")):
+            logger.info("Installing %s", conf.name)
+            system.sudo_write(
+                f"/etc/systemd/resolved.conf.d/{conf.name}",
+                conf.read_text(encoding="utf-8"),
+            )
+
+    if nm_src.is_dir() and shell.command_exists("nmcli"):
         shell.run(["sudo", "mkdir", "-p", "/etc/NetworkManager/conf.d"], check=False)
-        system.sudo_write("/etc/NetworkManager/conf.d/dns.conf", _NM_DNS)
+        for conf in sorted(nm_src.glob("*.conf")):
+            logger.info("Installing NetworkManager %s", conf.name)
+            system.sudo_write(
+                f"/etc/NetworkManager/conf.d/{conf.name}",
+                conf.read_text(encoding="utf-8"),
+            )
+
+
+def _linux_resolved(settings: Settings) -> None:
+    """Point systemd-resolved at Cloudflare DNS over TLS via drop-in files."""
+    logger.info("Configuring systemd-resolved for DNS over TLS…")
+    _install_dropins(settings)
     shell.run(
         [
             "sudo",
@@ -90,7 +97,7 @@ def _linux_resolved() -> None:
     shell.run(["sudo", "systemctl", "enable", "systemd-resolved"], check=False)
     if shell.command_exists("nmcli"):
         shell.run(["sudo", "systemctl", "restart", "NetworkManager"], check=False)
-    logger.info("Linux DNS over TLS configured (Cloudflare 1.1.1.1).")
+    logger.info("Linux DNS over TLS configured (Cloudflare 1.1.1.1 drop-ins).")
 
 
 def run(settings: Settings) -> None:
@@ -105,4 +112,4 @@ def run(settings: Settings) -> None:
         ):
             logger.warning("systemd-resolved not found; skipping DNS setup.")
             return
-        _linux_resolved()
+        _linux_resolved(settings)

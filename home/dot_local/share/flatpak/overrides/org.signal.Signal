@@ -1,0 +1,6 @@
+[Context]
+sockets=!fallback-x11
+filesystems=xdg-download;xdg-pictures:ro;xdg-videos:ro
+
+[Environment]
+SIGNAL_PASSWORD_STORE=gnome-libsecret

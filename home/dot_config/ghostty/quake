@@ -1,0 +1,12 @@
+# --- QUAKE MODE (QUICK TERMINAL) ---
+# Maps Command + ` to globally toggle the dropdown terminal
+keybind = global:cmd+grave_accent=toggle_quick_terminal
+
+# Set the dropdown height (60% of the screen height works best)
+quick-terminal-size = 60%
+
+# Screen position (top, bottom, left, right)
+quick-terminal-position = top
+
+# Automatically slide away when you click onto another application
+quick-terminal-autohide = true

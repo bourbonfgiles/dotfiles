@@ -1,0 +1,13 @@
+# Nothing at repo root should be applied when .chezmoiroot is home; belt-and-braces
+# if source is pointed at repo without reading root.
+README*
+readme*
+bootstrap.sh
+brewfile
+flatpaks*
+pyproject.toml
+src/**
+tests/**
+system/**
+dconf/**
+.git/**

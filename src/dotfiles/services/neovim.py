@@ -1,4 +1,4 @@
-"""Sync the stowed LazyVim config; never clobber it; link Neovide's sandbox."""
+"""Sync the chezmoi-managed LazyVim config; never clobber it; link Neovide."""
 
 from __future__ import annotations
 
@@ -36,18 +36,15 @@ def _link_neovide(settings: Settings) -> None:
 
 
 def run(settings: Settings) -> None:
-    """Verify the stowed nvim config and run a headless Lazy sync."""
+    """Verify the applied nvim config and run a headless Lazy sync."""
     nvim_cfg = settings.config_home / "nvim"
-    repo_nvim = settings.repo_config / "nvim"
+    repo_nvim = settings.chezmoi_home / "dot_config" / "nvim"
     if not nvim_cfg.exists():
-        logger.warning("%s missing; run stow first.", nvim_cfg)
+        logger.warning("%s missing; run chezmoi apply first.", nvim_cfg)
         return
-    if nvim_cfg.resolve() != repo_nvim.resolve():
-        logger.warning(
-            "%s does not resolve to the repo config (%s); leftover starter?",
-            nvim_cfg,
-            repo_nvim,
-        )
+    # chezmoi may copy or hardlink rather than symlink; presence of the source is enough.
+    if not repo_nvim.is_dir():
+        logger.warning("repo nvim source missing: %s", repo_nvim)
     elif shell.command_exists("nvim"):
         logger.info("Syncing Lazy plugins (headless)…")
         shell.run(["nvim", "--headless", "+Lazy! sync", "+qa"], check=False)

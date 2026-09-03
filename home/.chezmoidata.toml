@@ -1,0 +1,5 @@
+# Defaults applied with the source tree. Override per-machine in
+# ~/.config/chezmoi/chezmoi.toml under [data.git] if needed.
+[git]
+name = "bourbonfgiles"
+email = "giles@live.co.uk"

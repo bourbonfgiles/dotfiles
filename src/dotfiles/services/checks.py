@@ -10,7 +10,7 @@ logger = get_logger("checks")
 
 _CORE_TOOLS = (
     "git",
-    "stow",
+    "chezmoi",
     "zsh",
     "nvim",
     "starship",
@@ -25,7 +25,7 @@ _LINKED = ("nvim", "ghostty", "starship", "k9s")
 
 
 def run(settings: Settings) -> None:
-    """Report which core tools and stowed configs are present."""
+    """Report which core tools and applied configs are present."""
     logger.info("Post-bootstrap checks…")
     missing = [tool for tool in _CORE_TOOLS if not shell.command_exists(tool)]
     for tool in _CORE_TOOLS:

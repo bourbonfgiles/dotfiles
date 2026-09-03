@@ -9,6 +9,7 @@ from .config.settings import Settings
 from .services import (
     albert,
     checks,
+    chezmoi_apply,
     dns,
     flatpak,
     fonts,
@@ -19,7 +20,6 @@ from .services import (
     homebrew,
     neovim,
     shell_default,
-    stow,
     warp,
 )
 from .utils.exceptions import DotfilesError
@@ -43,14 +43,14 @@ class Step:
     critical: bool = field(default=False)
 
 
-# Order matters: Homebrew provides git/stow before clone/stow run; Neovim's
+# Order matters: Homebrew provides git/chezmoi before clone/apply run; Neovim's
 # plugin sync needs nvim from brew bundle, etc.
 # tuple[Step, ...]: a tuple of any length whose items are all Step. The '...' means
 # "variadic length" (not "fill this in"); a tuple (vs list) keeps the order fixed.
 STEPS: tuple[Step, ...] = (
     Step("homebrew", homebrew.run),
     Step("git_ssh", git_ssh.run, critical=True),
-    Step("stow", stow.run, critical=True),
+    Step("chezmoi", chezmoi_apply.run, critical=True),
     Step("flatpak", flatpak.run),
     Step("ghostty", ghostty.run),
     Step("warp", warp.run),
@@ -90,7 +90,7 @@ def run(settings: Settings, only: Sequence[str] | None = None) -> int:
             step.run(settings)  # call this service's run() function
         except DotfilesError as exc:  # only catch OUR errors; real bugs still surface
             failures += 1
-            if step.critical:  # critical steps (git_ssh, stow) must not continue
+            if step.critical:  # critical steps (git_ssh, chezmoi) must not continue
                 logger.error("%s failed (critical): %s", step.name, exc)
                 return 1  # bail out early with a failure exit code
             # non-critical step: warn and carry on to the next step

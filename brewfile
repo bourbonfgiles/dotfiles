@@ -4,9 +4,9 @@
 #   Sections:  1) SHARED CLI    2) macOS only    3) Linux only
 #
 #   Linux GUI apps, gaming, and Ghostty are handled outside brew bundle:
-#     flatpaks         -> .config/scripts/flatpak_setup.zsh
-#     flatpaks-gaming  -> .config/scripts/gaming_setup.zsh
-#     ghostty          -> .config/scripts/ghostty_setup.zsh
+#     flatpaks         -> src/dotfiles/services/flatpak.py
+#     flatpaks-gaming  -> src/dotfiles/services/gaming.py
+#     ghostty          -> src/dotfiles/services/ghostty.py
 ################################################################################
 
 
@@ -68,7 +68,7 @@ brew "python"
 brew "ripgrep"
 brew "rust"
 brew "starship"
-brew "stow"
+brew "chezmoi"
 brew "tenv"
 brew "terraform-docs"
 brew "tldr"

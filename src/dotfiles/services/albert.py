@@ -50,7 +50,7 @@ def ensure_podman_docker() -> None:
 
 
 def run(settings: Settings) -> None:
-    """Install Albert and its docker compat (config is stowed into ~/.config/albert)."""
+    """Install Albert and its docker compat (config via chezmoi → ~/.config/albert)."""
     if platform.is_mac():
         logger.info("macOS: Albert is Linux-only (use Raycast/Alfred); skipping.")
         return

@@ -1,0 +1,70 @@
+# Smyck palette (matches Ghostty built-in Smyck)
+colourful: true
+
+filekinds:
+  normal: {foreground: "#F7F7F7"}
+  directory: {foreground: "#62A3C4"}
+  symlink: {foreground: "#BA8ACC"}
+  pipe: {foreground: "#7A7A7A"}
+  block_device: {foreground: "#B84131"}
+  char_device: {foreground: "#B84131"}
+  socket: {foreground: "#7A7A7A"}
+  special: {foreground: "#BA8ACC"}
+  executable: {foreground: "#7DA900"}
+  mount_point: {foreground: "#C4A500"}
+
+perms:
+  user_read: {foreground: "#F7F7F7"}
+  user_write: {foreground: "#C4A500"}
+  user_execute_file: {foreground: "#7DA900"}
+  user_execute_other: {foreground: "#7DA900"}
+  group_read: {foreground: "#F7F7F7"}
+  group_write: {foreground: "#C4A500"}
+  group_execute: {foreground: "#7DA900"}
+  other_read: {foreground: "#A1A1A1"}
+  other_write: {foreground: "#C4A500"}
+  other_execute: {foreground: "#7DA900"}
+  special_user_file: {foreground: "#BA8ACC"}
+  special_other: {foreground: "#7A7A7A"}
+  attribute: {foreground: "#A1A1A1"}
+
+size:
+  major: {foreground: "#C4A500"}
+  minor: {foreground: "#BA8ACC"}
+  number_byte: {foreground: "#F7F7F7"}
+  number_kilo: {foreground: "#F7F7F7"}
+  number_mega: {foreground: "#62A3C4"}
+  number_giga: {foreground: "#BA8ACC"}
+  number_huge: {foreground: "#BA8ACC"}
+  unit_byte: {foreground: "#A1A1A1"}
+  unit_kilo: {foreground: "#62A3C4"}
+  unit_mega: {foreground: "#BA8ACC"}
+  unit_giga: {foreground: "#BA8ACC"}
+  unit_huge: {foreground: "#C4A500"}
+
+users:
+  user_you: {foreground: "#F7F7F7"}
+  user_root: {foreground: "#B84131"}
+  user_other: {foreground: "#BA8ACC"}
+  group_yours: {foreground: "#F7F7F7"}
+  group_other: {foreground: "#7A7A7A"}
+  group_root: {foreground: "#B84131"}
+
+links:
+  normal: {foreground: "#BA8ACC"}
+  multi_link_file: {foreground: "#C4A500"}
+
+git:
+  new: {foreground: "#7DA900"}
+  modified: {foreground: "#C4A500"}
+  deleted: {foreground: "#B84131"}
+  renamed: {foreground: "#62A3C4"}
+  typechange: {foreground: "#BA8ACC"}
+  ignored: {foreground: "#7A7A7A"}
+  conflicted: {foreground: "#B84131"}
+
+git_repo:
+  branch_main: {foreground: "#F7F7F7"}
+  branch_other: {foreground: "#BA8ACC"}
+  git_clean: {foreground: "#7DA900"}
+  git_dirty: {foreground: "#B84131"}
