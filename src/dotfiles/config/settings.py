@@ -20,12 +20,17 @@ class Settings:
     repo_root: Path
     config_home: Path
 
-    # '@property' lets you call this like an attribute (settings.repo_config) with
+    # '@property' lets you call this like an attribute (settings.chezmoi_home) with
     # no parentheses; it computes a value on access.
     @property
-    def repo_config(self) -> Path:
-        """The repo's ``.config`` tree (stowed into ``~/.config``)."""
-        return self.repo_root / ".config"  # Path overloads '/' to join path parts
+    def chezmoi_home(self) -> Path:
+        """Chezmoi source state (``home/`` via ``.chezmoiroot``)."""
+        return self.repo_root / "home"
+
+    @property
+    def system_dir(self) -> Path:
+        """Tracked system drop-ins (resolved, NetworkManager) for Linux."""
+        return self.repo_root / "system"
 
     @property
     def brewfile(self) -> Path:

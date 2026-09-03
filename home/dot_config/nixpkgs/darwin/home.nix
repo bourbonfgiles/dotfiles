@@ -36,7 +36,7 @@
     pre-commit
     ripgrep
     starship
-    stow
+    chezmoi
     terraform
     terraform-docs
     tldr

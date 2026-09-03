@@ -26,22 +26,29 @@ def _git_config(key: str) -> str:
 
 
 def _configure_identity() -> str:
-    """Prompt for Git identity only if unset; return the configured email."""
+    """Return a Git email for SSH key comments; identity lives in chezmoi.
+
+    ``~/.gitconfig`` is applied by the chezmoi step from ``dot_gitconfig.tmpl``
+    + ``home/.chezmoidata.toml``. This only prompts when nothing is set yet so
+    ssh-keygen still has an email comment on a brand-new machine.
+    """
     email = _git_config("user.email")
     name = _git_config("user.name")
-    if not email or not name:  # 'not x' is True for an empty string
-        email = input(
-            "Enter your GitHub email: "
-        ).strip()  # input(): read one stdin line
-        name = input("Enter your GitHub username: ").strip()
-        shell.run(["git", "config", "--global", "user.email", email])
-        shell.run(["git", "config", "--global", "user.name", name])
-    else:
+    if email and name:
         logger.info(
-            "Git identity already set for %s <%s>; skipping prompts.", name, email
+            "Git identity already set for %s <%s>; chezmoi manages ~/.gitconfig.",
+            name,
+            email,
         )
-    shell.run(["git", "config", "--global", "init.defaultBranch", "main"])
-    shell.run(["git", "config", "--global", "push.autosetupremote", "true"])
+        return email
+    email = input("Enter your GitHub email: ").strip()
+    name = input("Enter your GitHub username: ").strip()
+    # Seed global config so SSH can proceed before chezmoi apply overwrites it.
+    shell.run(["git", "config", "--global", "user.email", email])
+    shell.run(["git", "config", "--global", "user.name", name])
+    logger.info(
+        "Seeded git identity; update home/.chezmoidata.toml if this should persist."
+    )
     return email
 
 

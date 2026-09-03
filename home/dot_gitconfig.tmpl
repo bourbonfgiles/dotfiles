@@ -1,0 +1,18 @@
+[color]
+	ui = auto
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[rerere]
+	enabled = true
+
+[user]
+	name = {{ .git.name }}
+	email = {{ .git.email }}

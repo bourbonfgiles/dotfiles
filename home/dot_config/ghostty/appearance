@@ -1,0 +1,28 @@
+# luna: near-black greys with four accent hues, matching the nvim colorscheme
+# (wtfox/luna.nvim) so the editor and terminal chrome agree. Not a built-in
+# theme -- it's a local file in ./themes/, which Ghostty resolves before its
+# bundled themes. Pinned to a single name on purpose: the `light:x,dark:y` form
+# follows the system appearance, which we don't want.
+theme = luna
+font-size = 14
+
+# Nudge dim/low-contrast ANSI colours until they're legible against the
+# background, without flattening the palette (1.0 = no adjustment).
+minimum-contrast = 1.1
+
+# Frosted background, similar to Warp's translucent window.
+background-opacity = 0.96
+background-blur = 20
+
+# Steady block cursor is less distracting than a blinking bar during long reads.
+cursor-style = block
+cursor-style-blink = false
+mouse-hide-while-typing = true
+
+# Breathing room around the grid; balance splits padding evenly.
+window-padding-x = 8
+window-padding-y = 6
+window-padding-balance = true
+
+# Disable dimming for inactive split panes
+unfocused-split-opacity = 1.0

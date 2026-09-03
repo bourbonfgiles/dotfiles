@@ -47,5 +47,5 @@ __pycache__/
 .pytest_cache/
 
 # Albert rewrites its own config dir at runtime; track only the config file
-/.config/albert/*
-!/.config/albert/config
+/home/dot_config/albert/*
+!/home/dot_config/albert/config

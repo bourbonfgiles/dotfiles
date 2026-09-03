@@ -1,0 +1,4 @@
+# --- TAB BEHAVIOUR ---
+# `tab-style` was never a real Ghostty option (silently invalid until 1.3's
+# stricter validation). On macOS, tabs live in the titlebar via this key.
+macos-titlebar-style = tabs

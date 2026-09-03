@@ -1,4 +1,4 @@
-"""Homebrew: ensure it is on PATH, install git+stow, trust taps, brew bundle."""
+"""Homebrew: ensure it is on PATH, install git+chezmoi, trust taps, brew bundle."""
 
 from __future__ import annotations
 
@@ -54,7 +54,9 @@ def run(settings: Settings) -> None:
     shell.run(
         ["brew", "update"], check=False
     )  # check=False: continue even on a warning
-    shell.run(["brew", "install", "git", "stow"], check=False)  # tools later steps need
+    shell.run(
+        ["brew", "install", "git", "chezmoi"], check=False
+    )  # tools later steps need
     # Homebrew 6 refuses third-party taps until trusted; trust each declared tap.
     for tap in _taps(settings.brewfile):
         shell.run(["brew", "trust", tap], check=False)
