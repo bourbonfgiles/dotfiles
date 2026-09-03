@@ -56,7 +56,7 @@ home/
   dot_gitconfig.tmpl     → ~/.gitconfig   (from .chezmoidata.toml)
   dot_config/…           → ~/.config/…
   dot_local/share/flatpak/overrides/… → flatpak overrides
-  dot_config/eza/symlink_theme.yml.tmpl → ~/.config/eza/theme.yml
+  dot_config/eza/theme.yml → ~/.config/eza/theme.yml (Smyck)
 ```
 
 ```bash
@@ -91,7 +91,7 @@ tests/
 Config is split under `home/dot_config/ghostty/`:
 
 - `config` — includes the fragments
-- `appearance` / `input` / `quake` / `platform`
+- `appearance` (Smyck) / `input` / `quake` / `platform`
 
 ## Dev checks
 

@@ -1,9 +1,5 @@
-# luna: near-black greys with four accent hues, matching the nvim colorscheme
-# (wtfox/luna.nvim) so the editor and terminal chrome agree. Not a built-in
-# theme -- it's a local file in ./themes/, which Ghostty resolves before its
-# bundled themes. Pinned to a single name on purpose: the `light:x,dark:y` form
-# follows the system appearance, which we don't want.
-theme = luna
+# Smyck: Ghostty ships this palette built-in. Keep terminal + editor aligned.
+theme = Smyck
 font-size = 14
 
 # Nudge dim/low-contrast ANSI colours until they're legible against the

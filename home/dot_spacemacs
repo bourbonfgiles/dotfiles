@@ -229,20 +229,10 @@ It should only modify the values of Spacemacs settings."
    ;; package can be defined with `:package', or a theme can be defined with
    ;; `:location' to download the theme package, refer the themes section in
    ;; DOCUMENTATION.org for the full theme specifications.
-   dotspacemacs-themes '(doom-tokyo-night
+   dotspacemacs-themes '((smyck :package smyck-theme)
                          doom-one
+                         doom-tokyo-night
                          doom-dracula
-                         doom-gruvbox
-                         doom-nord
-                         doom-monokai-classic
-                         gruvbox-dark-hard
-                         dracula
-                         nord
-                         monokai
-                         solarized-dark
-                         solarized-light
-                         zenburn
-                         atom-one-dark
                          spacemacs-dark
                          spacemacs-light)
 

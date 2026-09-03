@@ -4,7 +4,7 @@ return {
     opts = {
       options = {
         -- "auto" resolves lualine/themes/<colors_name>, so the statusline follows
-        -- whatever colorscheme is active. luna ships its own matching theme.
+        -- whatever colorscheme is active. follows active colorscheme (smyck).
         theme = "auto",
         globalstatus = true,
       },
