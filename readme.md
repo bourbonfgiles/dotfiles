@@ -63,7 +63,10 @@ home/
 chezmoi --source ~/repos/personal/dotfiles apply
 ```
 
-Git identity defaults live in `home/.chezmoidata.toml`; override per machine under `~/.config/chezmoi/chezmoi.toml` `[data.git]`.
+Git identity:
+
+- **Personal** (committed): `home/.chezmoidata.toml` → global `~/.gitconfig`
+- **Work** (not in git): copy `chezmoi.toml.example` → `~/.config/chezmoi/chezmoi.toml`, fill `[data.git.work]`, apply. That writes `~/.config/git/config-work`, included only for `~/repos/vitalhub/` via `includeIf`.
 
 ## Repository structure
 

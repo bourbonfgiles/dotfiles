@@ -1,5 +1,5 @@
-# Defaults applied with the source tree. Override per-machine in
-# ~/.config/chezmoi/chezmoi.toml under [data.git] if needed.
+# Committed defaults (personal). Work identity is NOT stored here — set it on the
+# machine under ~/.config/chezmoi/chezmoi.toml (see chezmoi.toml.example).
 [git]
 name = "bourbonfgiles"
 email = "giles@live.co.uk"

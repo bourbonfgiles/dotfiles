@@ -1,0 +1,15 @@
+{{- /* Work author for gitdir includeIf. Fill via ~/.config/chezmoi/chezmoi.toml
+     [data.git.work] name / email — never commit employer-specific values. */ -}}
+{{- if and (hasKey . "git") (hasKey .git "work") .git.work.name .git.work.email }}
+[user]
+	name = {{ .git.work.name | quote }}
+	email = {{ .git.work.email | quote }}
+{{- else }}
+# No work identity configured.
+# On this machine, add to ~/.config/chezmoi/chezmoi.toml then re-apply:
+#
+#   [data.git.work]
+#   name = "Your Name"
+#   email = "you@company.com"
+#
+{{- end }}
