@@ -1,5 +1,5 @@
-# Smyck: Ghostty ships this palette built-in. Keep terminal + editor aligned.
-theme = Smyck
+# No custom theme: let Ghostty use its built-in default. Match against the
+# editor's active colorscheme by hand if you want them aligned.
 font-size = 14
 
 # Nudge dim/low-contrast ANSI colours until they're legible against the
