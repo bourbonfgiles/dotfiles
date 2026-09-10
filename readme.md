@@ -89,6 +89,23 @@ tests/
 - DNS uses `system/resolved.conf.d/*` drop-ins (not a full rewrite of resolved.conf).
 - Neovim config is chezmoi-managed; the neovim step only syncs plugins.
 
+## Notes (brew on macOS)
+
+`brew install hashicorp/tap/*` and similar will sometimes fail cloning with `could not read Username for 'https://github.com'`. Brew shells out to git with `GIT_TERMINAL_PROMPT=0` and `/opt/homebrew/etc/gitconfig` only sets `credential.helper=osxkeychain` — with nothing stored for `github.com`, git dies before it can fall through to anonymous cloning.
+
+Fix (scoped to brew's git operations only — leaves `~/.gitconfig`, the included work identity, and clones in `~/repos/vitalhub/` untouched):
+
+```ini
+# /opt/homebrew/etc/gitconfig
+[credential]
+    helper = osxkeychain
+
+[url "git@github.com:"]
+    insteadOf = https://github.com/
+```
+
+This rewrites `https://github.com/...` to `git@github.com:...` whenever git reads brew's system gitconfig (every brew-driven clone). The existing personal SSH key registered under `bourbonfgiles` via `gh` and `~/.ssh/config` handles auth. Linuxbrew lives at `~/.linuxbrew/etc/gitconfig` and would need the same block on Linux if the same error appears there.
+
 ## Ghostty
 
 Config is split under `home/dot_config/ghostty/`:
