@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import re  # stdlib: regular expressions
+from pathlib import Path
 
+from .logging import get_logger
 from .platform import OS_RELEASE_PATH  # single source of truth for the file path
 from .shell import run
+
+logger = get_logger("system")
 
 
 def fedora_version_id(default: str = "40") -> str:
@@ -40,3 +44,41 @@ def rpm_ostree_local_package(name: str) -> bool:
     # re.search returns a Match object or None; bool() turns that into True/False.
     # rf"..." is a raw f-string; re.escape() neutralises any regex-special chars.
     return bool(re.search(rf"LocalPackages:.*{re.escape(name)}", result.stdout))
+
+
+def ensure_repo_file(path: str, body: str, *, label: str) -> None:
+    """Write a yum ``.repo`` file via sudo if it is not already present.
+
+    ``label`` is used only for the log line (e.g. "Warp", "Albert").
+    """
+    if Path(path).exists():
+        logger.info("%s repo already present.", label)
+        return
+    logger.info("Adding %s's RPM repo…", label)
+    sudo_write(path, body)
+
+
+def rpmostree_install_or_migrate(package: str, *, label: str) -> None:
+    """Layer ``package`` with rpm-ostree, migrating a stray local RPM if needed.
+
+    Covers the shared atomic-Fedora flow used by multiple services:
+
+    * if the package is already installed as a one-off ``LocalPackages`` entry,
+      uninstall it and reinstall from the (now configured) repo so updates flow;
+    * if it is already layered from a repo, do nothing;
+    * otherwise layer it idempotently.
+
+    A reboot is required before a newly layered package is usable.
+    """
+    run(["rpm-ostree", "refresh-md"], check=False)
+    if rpm_installed(package):
+        if rpm_ostree_local_package(package):
+            logger.info("Migrating %s from a local RPM to the repo package…", label)
+            run(["sudo", "rpm-ostree", "uninstall", package], check=False)
+            run(["sudo", "rpm-ostree", "install", package], check=False)
+            logger.info("%s migrated. Reboot to finish: systemctl reboot", label)
+        else:
+            logger.info("%s already layered from the repo; nothing to do.", label)
+        return
+    logger.info("Layering %s (rpm-ostree). A reboot is needed to use it.", label)
+    run(["sudo", "rpm-ostree", "install", "--idempotent", package], check=False)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from ..config.settings import Settings
 from ..utils import platform, shell, system
 from ..utils.logging import get_logger
@@ -59,32 +61,12 @@ def run(settings: Settings) -> None:
     target = _obs_target()
     base = f"{_OBS_BASE}/{target}/"
     if kind in (OSKind.BAZZITE, OSKind.FEDORA_ATOMIC):
-        from pathlib import Path
-
-        if not Path(_REPO_FILE).exists():
-            logger.info("Adding Albert's OBS repo (%s)…", target)
-            system.sudo_write(_REPO_FILE, _repo_body(base))
-        shell.run(["rpm-ostree", "refresh-md"], check=False)
-        if system.rpm_installed("albert"):
-            if system.rpm_ostree_local_package("albert"):
-                logger.info("Migrating Albert from a local RPM to the repo package…")
-                shell.run(["sudo", "rpm-ostree", "uninstall", "albert"], check=False)
-                shell.run(["sudo", "rpm-ostree", "install", "albert"], check=False)
-            else:
-                logger.info("Albert already layered from the repo; nothing to do.")
-            return
-        logger.info("Layering Albert (rpm-ostree). A reboot is needed to use it.")
-        result = shell.run(
-            ["sudo", "rpm-ostree", "install", "--idempotent", "albert"], check=False
+        system.ensure_repo_file(
+            _REPO_FILE, _repo_body(base), label=f"Albert ({target})"
         )
-        if result.returncode != 0:
-            logger.warning(
-                "rpm-ostree install albert failed — OBS may lack %s.", target
-            )
+        system.rpmostree_install_or_migrate("albert", label="Albert")
         return
     if shell.command_exists("dnf"):
-        from pathlib import Path
-
         if not Path(_REPO_FILE).exists():
             system.sudo_write(_REPO_FILE, _repo_body(base))
         shell.run(["sudo", "dnf", "-y", "install", "albert"], check=False)

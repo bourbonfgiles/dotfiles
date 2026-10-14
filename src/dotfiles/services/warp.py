@@ -25,14 +25,6 @@ _REPO_BODY = (
 )
 
 
-def _ensure_repo() -> None:
-    if not Path(_REPO_FILE).exists():
-        logger.info("Adding Warp's official RPM repo…")
-        system.sudo_write(_REPO_FILE, _REPO_BODY)
-    else:
-        logger.info("Warp repo already present.")
-
-
 def run(settings: Settings) -> None:
     """Install/migrate Warp from the official repo (no-op on the macOS cask)."""
     kind = platform.os_kind()
@@ -40,28 +32,8 @@ def run(settings: Settings) -> None:
         logger.info("macOS: Warp is installed via the Homebrew cask.")
         return
     if kind in (OSKind.BAZZITE, OSKind.FEDORA_ATOMIC):
-        _ensure_repo()
-        shell.run(["rpm-ostree", "refresh-md"], check=False)
-        if system.rpm_installed("warp-terminal"):
-            # Migrate a hand-installed local RPM to the repo-tracked package so
-            # future updates flow from the repo instead of a one-off file.
-            if system.rpm_ostree_local_package("warp-terminal"):
-                logger.info("Migrating Warp from a local RPM to the repo package…")
-                shell.run(
-                    ["sudo", "rpm-ostree", "uninstall", "warp-terminal"], check=False
-                )
-                shell.run(
-                    ["sudo", "rpm-ostree", "install", "warp-terminal"], check=False
-                )
-                logger.info("Warp migrated. Reboot to finish: systemctl reboot")
-            else:
-                logger.info("Warp already layered from the repo; nothing to do.")
-            return
-        logger.info("Layering Warp (rpm-ostree). A reboot is needed to use it.")
-        shell.run(
-            ["sudo", "rpm-ostree", "install", "--idempotent", "warp-terminal"],
-            check=False,
-        )
+        system.ensure_repo_file(_REPO_FILE, _REPO_BODY, label="Warp")
+        system.rpmostree_install_or_migrate("warp-terminal", label="Warp")
         return
     if shell.command_exists("dnf"):  # non-atomic Fedora fallback
         if not Path(_REPO_FILE).exists():
