@@ -61,5 +61,15 @@ def run(settings: Settings) -> None:
     for tap in _taps(settings.brewfile):
         shell.run(["brew", "trust", tap], check=False)
     logger.info("Running brew bundle…")
-    shell.run(["brew", "bundle", "--file", str(settings.brewfile)], check=False)
+    # Surface a failed bundle as a non-critical StepError so the orchestrator
+    # records it (exit 1) instead of silently exiting 0. `update`, the git/chezmoi
+    # pre-install, and tap trusting stay best-effort (advisory or recoverable).
+    result = shell.run(
+        ["brew", "bundle", "--file", str(settings.brewfile)], check=False
+    )
+    if result.returncode != 0:
+        raise StepError(
+            f"brew bundle failed (exit {result.returncode}); some packages "
+            "may not be installed"
+        )
     logger.info("Homebrew bundle complete.")

@@ -85,6 +85,18 @@ class TestHomebrew:
         assert fake_runner.ran("brew", "trust", "a/b")
         assert fake_runner.ran("brew", "bundle", "--file", str(settings.brewfile))
 
+    def test_run_raises_when_bundle_fails(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        settings: Settings,
+        fake_runner: FakeRunner,
+    ) -> None:
+        monkeypatch.setattr(shell, "command_exists", lambda _n: True)
+        fake_runner.script(["brew", "bundle"], returncode=1)
+        with pytest.raises(StepError, match="brew bundle failed"):
+            homebrew.run(settings)
+        assert fake_runner.ran("brew", "bundle", "--file", str(settings.brewfile))
+
 
 class TestChezmoiApply:
     def test_raises_when_chezmoi_absent(
