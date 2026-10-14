@@ -2,25 +2,25 @@
 
 from __future__ import annotations
 
-import shutil  # stdlib: high-level helpers (shutil.which finds programs on PATH)
-import subprocess  # stdlib: spawn and manage external programs
-from collections.abc import Mapping, Sequence  # abstract types used in hints only
-from typing import Protocol  # Protocol: structural ("duck") typing for the runner
+import shutil
+import subprocess
+from collections.abc import Mapping, Sequence
+from typing import Protocol
 
-from .exceptions import CommandError  # relative import: '.' = this package (utils)
+from .exceptions import CommandError
 from .logging import get_logger
 
-logger = get_logger("shell")  # one module-level logger instance
+logger = get_logger("shell")
 
 
-def which(name: str) -> str | None:  # returns a path string, or None if not found
+def which(name: str) -> str | None:
     """Return the absolute path to ``name`` on PATH, or None."""
     return shutil.which(name)
 
 
 def command_exists(name: str) -> bool:
     """Return True if ``name`` is found on PATH."""
-    return shutil.which(name) is not None  # 'is not None' = explicit None test
+    return shutil.which(name) is not None
 
 
 # Making the executor swappable (rather than calling subprocess directly) is the
@@ -54,22 +54,21 @@ class SubprocessRunner:
         cwd: str | None,
     ) -> subprocess.CompletedProcess[str]:
         try:
-            return subprocess.run(  # the call that actually starts the process
-                list(cmd),  # list(): copy/normalise the sequence into a list
-                check=check,  # if True, a non-zero exit raises CalledProcessError
-                text=True,  # decode stdout/stderr as str (not raw bytes)
+            return subprocess.run(
+                list(cmd),
+                check=check,
+                text=True,
                 capture_output=capture,
                 input=text_input,
                 env=dict(env) if env is not None else None,
                 cwd=cwd,
             )
-        except FileNotFoundError as exc:  # 'as exc' binds the caught exception object
-            # 'raise NEW from exc' chains exceptions, preserving the original cause.
+        except FileNotFoundError as exc:
             raise CommandError(f"command not found: {cmd[0]}") from exc
         except subprocess.CalledProcessError as exc:
             raise CommandError(
                 f"command failed ({exc.returncode}): {' '.join(cmd)}",
-                returncode=exc.returncode,  # attribute read off the caught exception
+                returncode=exc.returncode,
                 stderr=exc.stderr,
             ) from exc
 
@@ -157,15 +156,15 @@ def _is_read_only(cmd: Sequence[str], *, capture: bool, text_input: str | None) 
     return False
 
 
-# The active runner. Swapped by set_runner() for dry-run or tests; everything
-# in the codebase calls the module-level run()/capture() below, never a runner
-# object directly, so this single switch changes behaviour everywhere at once.
+# The active runner, swapped by set_runner() for dry-run or tests. Everything
+# calls the module-level run()/capture() below, so this one switch changes
+# command execution everywhere at once.
 _runner: Runner = SubprocessRunner()
 
 
 def set_runner(runner: Runner) -> Runner:
     """Install ``runner`` as the active executor; return the previous one."""
-    global _runner  # rebind the module-level name (not a local)
+    global _runner
     previous = _runner
     _runner = runner
     return previous
@@ -177,14 +176,14 @@ def get_runner() -> Runner:
 
 
 def run(
-    cmd: Sequence[str],  # a sequence (list/tuple) of argument strings
-    *,  # everything below is keyword-only (caller must name it)
+    cmd: Sequence[str],
+    *,
     check: bool = True,
     capture: bool = False,
     text_input: str | None = None,
     env: Mapping[str, str] | None = None,
     cwd: str | None = None,
-) -> subprocess.CompletedProcess[str]:  # returns the finished-process object
+) -> subprocess.CompletedProcess[str]:
     """Run an external command through the active runner.
 
     Args:
@@ -201,9 +200,7 @@ def run(
     Raises:
         CommandError: If the program is missing or (when ``check``) it fails.
     """
-    logger.debug(
-        "run: %s", " ".join(cmd)
-    )  # %s is lazy formatting; str.join builds text
+    logger.debug("run: %s", " ".join(cmd))
     return _runner.run(
         cmd,
         check=check,
@@ -216,5 +213,4 @@ def run(
 
 def capture(cmd: Sequence[str]) -> str:
     """Run ``cmd`` and return its stripped stdout."""
-    # .stdout is a CompletedProcess attribute; .strip() trims surrounding whitespace.
     return run(cmd, capture=True).stdout.strip()

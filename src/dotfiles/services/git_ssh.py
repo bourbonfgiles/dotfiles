@@ -14,7 +14,6 @@ logger = get_logger("git_ssh")
 
 
 def _git_config(key: str) -> str:
-    # Read a global git setting; check=False so an unset key just yields "".
     return shell.run(
         ["git", "config", "--global", key], check=False, capture=True
     ).stdout.strip()
@@ -37,9 +36,8 @@ def _configure_identity() -> str:
         )
         return email
     if _options().assume_yes:
-        # Non-interactive: don't block on prompts. chezmoi apply will seed the
-        # real identity from home/.chezmoidata.toml a step later; an empty email
-        # only affects the ssh-keygen comment on a brand-new machine.
+        # chezmoi apply seeds the real identity later; an empty email here only
+        # affects the ssh-keygen comment on a brand-new machine.
         logger.warning(
             "Non-interactive (--yes): git identity unset; "
             "chezmoi will apply it from .chezmoidata.toml."
@@ -47,7 +45,7 @@ def _configure_identity() -> str:
         return email
     email = input("Enter your GitHub email: ").strip()
     name = input("Enter your GitHub username: ").strip()
-    # Seed global config so SSH can proceed before chezmoi apply overwrites it.
+    # Seed config so SSH works before chezmoi apply overwrites it.
     shell.run(["git", "config", "--global", "user.email", email])
     shell.run(["git", "config", "--global", "user.name", name])
     logger.info(
@@ -58,9 +56,8 @@ def _configure_identity() -> str:
 
 def _copy_to_clipboard(text: str) -> bool:
     """Best-effort copy of ``text`` to the system clipboard."""
-    # Each candidate tool is itself a list (an argv); we try them in order.
     for tool in (["pbcopy"], ["wl-copy"], ["xclip", "-selection", "clipboard"]):
-        if shell.command_exists(tool[0]):  # tool[0] is the program name
+        if shell.command_exists(tool[0]):
             shell.run(tool, text_input=text, check=False)
             return True
     return False
@@ -68,17 +65,13 @@ def _copy_to_clipboard(text: str) -> bool:
 
 def _ensure_ssh_key(email: str) -> None:
     ssh_dir = Path.home() / ".ssh"
-    ssh_dir.mkdir(
-        mode=0o700, exist_ok=True
-    )  # 0o700 = octal perms; exist_ok avoids error
+    ssh_dir.mkdir(mode=0o700, exist_ok=True)
     key = ssh_dir / "id_ed25519"
     if key.exists():
         logger.info("SSH key already exists.")
         return
     shell.run(["ssh-keygen", "-t", "ed25519", "-C", email])
-    pub = key.with_suffix(".pub").read_text(
-        encoding="utf-8"
-    )  # with_suffix swaps extension
+    pub = key.with_suffix(".pub").read_text(encoding="utf-8")
     if _copy_to_clipboard(pub):
         logger.info("SSH public key copied to clipboard.")
     else:
@@ -89,12 +82,12 @@ def _ensure_ssh_key(email: str) -> None:
             "clones over SSH may fail until the key is added to GitHub."
         )
         return
-    input("Press Enter after adding the SSH key to GitHub… ")  # pause for the user
+    input("Press Enter after adding the SSH key to GitHub… ")
 
 
 def _clone_or_update(url: str, dest: Path) -> None:
-    if (dest / ".git").is_dir():  # already a clone -> update it
-        logger.info("Updating %s…", dest.name)  # Path.name = final path component
+    if (dest / ".git").is_dir():
+        logger.info("Updating %s…", dest.name)
         shell.run(["git", "-C", str(dest), "pull", "--ff-only"], check=False)
     else:
         logger.info("Cloning %s…", dest.name)
@@ -107,5 +100,5 @@ def run(settings: Settings) -> None:
     email = _configure_identity()
     _ensure_ssh_key(email)
     (settings.home / "repos" / "personal").mkdir(parents=True, exist_ok=True)
-    for url, rel in REPOS:  # tuple unpacking: url, rel come from each pair
+    for url, rel in REPOS:
         _clone_or_update(url, settings.home / rel)

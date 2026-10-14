@@ -2,26 +2,21 @@
 
 from __future__ import annotations
 
-import os  # stdlib: environment access (os.environ)
-from dataclasses import dataclass  # decorator that auto-generates __init__/__repr__
+import os
+from dataclasses import dataclass
 from pathlib import Path
 
-from ..utils.exceptions import DotfilesError  # '..' = parent package (dotfiles)
+from ..utils.exceptions import DotfilesError
 
 
-# '@dataclass(frozen=True)' is a decorator: it writes the boilerplate __init__,
-# __repr__, __eq__ for us. 'frozen=True' makes instances read-only (immutable).
 @dataclass(frozen=True)
 class Settings:
     """Filesystem locations the bootstrap operates on."""
 
-    # These class-level annotations become the dataclass fields (and __init__ args).
     home: Path
     repo_root: Path
     config_home: Path
 
-    # '@property' lets you call this like an attribute (settings.chezmoi_home) with
-    # no parentheses; it computes a value on access.
     @property
     def chezmoi_home(self) -> Path:
         """Chezmoi source state (``home/`` via ``.chezmoiroot``)."""
@@ -52,20 +47,15 @@ class Settings:
         """Tracked GNOME dconf snippets."""
         return self.repo_root / "dconf"
 
-    # '@classmethod' receives the class itself ('cls'), not an instance. It's a
-    # factory: a tidy way to build and return a configured Settings.
     @classmethod
-    def load(cls) -> Settings:  # 'from __future__ import annotations' lets us name
-        # the still-unfinished class here (a forward reference) without quotes.
+    def load(cls) -> Settings:
         """Resolve settings from the environment and package location."""
-        home = Path.home()  # Path classmethod: the current user's home directory
-        # __file__ is this file's path. .resolve() makes it absolute (following
-        # symlinks). .parents[3] climbs 4 levels: config -> dotfiles -> src -> repo.
+        home = Path.home()
+        # config -> dotfiles -> src -> repo
         repo_root = Path(__file__).resolve().parents[3]
-        # os.environ.get(key, default): read an env var, falling back if unset.
         config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(home / ".config")))
         settings = cls(home=home, repo_root=repo_root, config_home=config_home)
-        settings.validate()  # run our own check before handing the object back
+        settings.validate()
         return settings
 
     def validate(self) -> None:
@@ -74,8 +64,8 @@ class Settings:
         Raises:
             DotfilesError: If the resolved repo root does not exist.
         """
-        if not self.repo_root.is_dir():  # Path.is_dir(): bool
+        if not self.repo_root.is_dir():
             raise DotfilesError(f"repo root not found: {self.repo_root}")
 
 
-__all__ = ["Settings"]  # names exported by 'from settings import *'
+__all__ = ["Settings"]
