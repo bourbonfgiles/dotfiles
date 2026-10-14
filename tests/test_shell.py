@@ -78,3 +78,27 @@ class TestDryRunner:
         assert not shell._is_read_only(
             ["git", "config", "user.name", "Ben"], capture=False, text_input=None
         )
+
+    def test_git_pull_is_mutating(self) -> None:
+        # `git pull` and `git -C <dir> pull` both mutate -> must be skipped.
+        assert not shell._is_read_only(
+            ["git", "pull", "--ff-only"], capture=False, text_input=None
+        )
+        assert not shell._is_read_only(
+            ["git", "-C", "/some/repo", "pull", "--ff-only"],
+            capture=False,
+            text_input=None,
+        )
+
+    def test_git_c_prefix_still_reads_config(self) -> None:
+        # `git -C <dir> config key` is a read behind the -C prefix.
+        assert shell._is_read_only(
+            ["git", "-C", "/some/repo", "config", "user.name"],
+            capture=True,
+            text_input=None,
+        )
+
+    def test_git_clone_is_mutating(self) -> None:
+        assert not shell._is_read_only(
+            ["git", "clone", "url", "/dest"], capture=False, text_input=None
+        )

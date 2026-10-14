@@ -121,10 +121,19 @@ _READ_ONLY_PROGRAMS = frozenset(
 )
 # Subcommands that are read-only for programs that are otherwise mutating.
 _READ_ONLY_SUBCOMMANDS = {
-    "git": frozenset({"config", "-C"}),
     "rpm-ostree": frozenset({"status"}),
     "brew": frozenset({"list"}),
 }
+# Read-only git subcommands (judged after any leading `-C <dir>`).
+_GIT_READ_ONLY = frozenset({"config", "status", "rev-parse", "remote", "log"})
+
+
+def _git_subcommand(cmd: Sequence[str]) -> str | None:
+    """Return git's real subcommand, skipping a leading ``-C <dir>``."""
+    i = 1
+    while i < len(cmd) and cmd[i] == "-C":
+        i += 2  # skip the flag and its directory argument
+    return cmd[i] if i < len(cmd) else None
 
 
 def _is_read_only(cmd: Sequence[str], *, capture: bool, text_input: str | None) -> bool:
@@ -134,12 +143,17 @@ def _is_read_only(cmd: Sequence[str], *, capture: bool, text_input: str | None) 
     program = cmd[0]
     if program in _READ_ONLY_PROGRAMS:
         return True
+    if program == "git":
+        # Judge the real subcommand, not `-C` — `git -C dir pull` MUTATES.
+        sub = _git_subcommand(cmd)
+        if sub not in _GIT_READ_ONLY:
+            return False
+        if sub == "config":
+            # `git config key` reads; `git config key value` writes.
+            return capture and text_input is None
+        return True
     subs = _READ_ONLY_SUBCOMMANDS.get(program)
     if subs is not None and len(cmd) > 1 and cmd[1] in subs:
-        # `git config key` reads; `git config key value` writes. Treat a bare
-        # read (capture with no stdin) as safe, otherwise assume a mutation.
-        if program == "git" and cmd[1] == "config":
-            return capture and text_input is None
         return True
     return False
 
