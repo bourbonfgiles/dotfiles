@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config.data import REPOS
+from ..config.runtime import current as _options
 from ..config.settings import Settings
 from ..utils import shell
 from ..utils.logging import get_logger
@@ -33,6 +34,15 @@ def _configure_identity() -> str:
             "Git identity already set for %s <%s>; chezmoi manages ~/.gitconfig.",
             name,
             email,
+        )
+        return email
+    if _options().assume_yes:
+        # Non-interactive: don't block on prompts. chezmoi apply will seed the
+        # real identity from home/.chezmoidata.toml a step later; an empty email
+        # only affects the ssh-keygen comment on a brand-new machine.
+        logger.warning(
+            "Non-interactive (--yes): git identity unset; "
+            "chezmoi will apply it from .chezmoidata.toml."
         )
         return email
     email = input("Enter your GitHub email: ").strip()
@@ -73,6 +83,12 @@ def _ensure_ssh_key(email: str) -> None:
         logger.info("SSH public key copied to clipboard.")
     else:
         logger.info("Add this SSH public key to GitHub:\n%s", pub)
+    if _options().assume_yes:
+        logger.warning(
+            "Non-interactive (--yes): not pausing for key upload; "
+            "clones over SSH may fail until the key is added to GitHub."
+        )
+        return
     input("Press Enter after adding the SSH key to GitHub… ")  # pause for the user
 
 

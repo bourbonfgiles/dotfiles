@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence  # abstract types used only in hints
 from dataclasses import dataclass, field  # field(): set per-field dataclass options
 
+from .config import runtime
 from .config.settings import Settings
 from .services import (
     albert,
@@ -76,6 +77,8 @@ def run(
     only: Sequence[str] | None = None,
     *,
     dry_run: bool = False,
+    assume_yes: bool = False,
+    strict: bool = False,
 ) -> int:
     """Execute the steps and return a process exit code.
 
@@ -84,10 +87,13 @@ def run(
         only: When given, run only these step names (in declared order).
         dry_run: When True, mutating commands are logged instead of executed
             (read-only probes still run so detection logic stays correct).
+        assume_yes: When True, services skip interactive prompts.
+        strict: When True, the checks step fails if core tools are missing.
 
     Returns:
         ``0`` on success, ``1`` if a critical step failed.
     """
+    runtime.configure(assume_yes=assume_yes, strict=strict)
     if dry_run:  # swap the real executor for one that only logs mutations
         shell.set_runner(shell.DryRunner())
         logger.info("Dry run: mutating commands will be logged, not executed.")

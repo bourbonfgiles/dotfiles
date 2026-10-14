@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from dotfiles.config import runtime
 from dotfiles.config.settings import Settings
 from dotfiles.utils import shell
 
@@ -89,6 +90,14 @@ def fake_runner() -> Iterator[FakeRunner]:
         yield runner
     finally:
         shell.set_runner(previous)
+
+
+@pytest.fixture(autouse=True)
+def reset_runtime_options() -> Iterator[None]:
+    """Reset process-wide run options before and after every test."""
+    runtime.configure(assume_yes=False, strict=False)
+    yield
+    runtime.configure(assume_yes=False, strict=False)
 
 
 @pytest.fixture
