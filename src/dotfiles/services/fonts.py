@@ -7,15 +7,14 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
+from ..config.data import NERD_FONTS, NERD_FONTS_RELEASE
 from ..config.settings import Settings
 from ..utils import platform, shell
 from ..utils.logging import get_logger
 
 logger = get_logger("fonts")
 
-_FONTS = ("JetBrainsMono",)
 _FONT_DIR = Path.home() / ".local/share/fonts"
-_RELEASE = "https://github.com/ryanoasis/nerd-fonts/releases/latest/download"
 
 
 def _installed(name: str) -> bool:
@@ -24,7 +23,7 @@ def _installed(name: str) -> bool:
 
 
 def _install(name: str) -> None:
-    url = f"{_RELEASE}/{name}.tar.xz"
+    url = f"{NERD_FONTS_RELEASE}/{name}.tar.xz"
     logger.info("Installing %s Nerd Font…", name)
     with tempfile.TemporaryDirectory() as tmp:
         archive = Path(tmp) / f"{name}.tar.xz"
@@ -41,7 +40,7 @@ def run(settings: Settings) -> None:
         logger.info("macOS: Nerd Fonts come from Brewfile casks; skipping.")
         return
     _FONT_DIR.mkdir(parents=True, exist_ok=True)
-    for name in _FONTS:
+    for name in NERD_FONTS:
         if _installed(name):
             logger.info("%s Nerd Font already installed.", name)
             continue

@@ -5,7 +5,7 @@ from __future__ import annotations
 from ..config.settings import Settings
 from ..utils import platform, shell, system
 from ..utils.logging import get_logger
-from ..utils.platform import OSKind  # import the enum to compare against its members
+from ..utils.platform import OSKind
 
 logger = get_logger("ghostty")
 
@@ -17,23 +17,21 @@ def run(settings: Settings) -> None:
     if shell.command_exists("ghostty"):
         logger.info("Ghostty already installed.")
         return
-    kind = platform.os_kind()  # one of the OSKind members
+    kind = platform.os_kind()
     if kind is OSKind.MAC:
         logger.info("macOS: Ghostty is installed via the Homebrew cask.")
         return
-    if kind in (OSKind.BAZZITE, OSKind.FEDORA_ATOMIC):  # 'in' tests tuple membership
+    if kind in (OSKind.BAZZITE, OSKind.FEDORA_ATOMIC):
         if system.rpm_installed("ghostty"):
             logger.info("Ghostty rpm already layered (reboot pending?).")
             return
         version = system.fedora_version_id()
-        url = (  # adjacent string literals are concatenated automatically
+        url = (
             "https://copr.fedorainfracloud.org/coprs/scottames/ghostty/repo/"
             f"fedora-{version}/scottames-ghostty-fedora-{version}.repo"
         )
         logger.info("Adding scottames/ghostty COPR for Fedora %s…", version)
-        system.sudo_write(
-            _REPO_FILE, shell.capture(["curl", "-fsSL", url])
-        )  # download then write
+        system.sudo_write(_REPO_FILE, shell.capture(["curl", "-fsSL", url]))
         shell.run(["rpm-ostree", "refresh-md"], check=False)
         result = shell.run(
             ["sudo", "rpm-ostree", "install", "--idempotent", "ghostty"], check=False

@@ -31,6 +31,9 @@ sh ~/repos/personal/dotfiles/bootstrap.sh
 ```bash
 PYTHONPATH=src python3 -m dotfiles --list
 PYTHONPATH=src python3 -m dotfiles --only chezmoi
+PYTHONPATH=src python3 -m dotfiles --dry-run          # log mutations, don't apply
+PYTHONPATH=src python3 -m dotfiles --yes              # non-interactive (no prompts)
+PYTHONPATH=src python3 -m dotfiles --only checks --strict   # fail if a tool is missing
 ```
 
 ## Bootstrap flow

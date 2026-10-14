@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence  # abstract types used only in hints
-from dataclasses import dataclass, field  # field(): set per-field dataclass options
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 
+from .config import runtime
 from .config.settings import Settings
 from .services import (
     albert,
@@ -22,31 +23,24 @@ from .services import (
     shell_default,
     warp,
 )
+from .utils import shell
 from .utils.exceptions import DotfilesError
 from .utils.logging import get_logger
 
 logger = get_logger("bootstrap")
 
 
-# frozen=True -> immutable; also auto-writes __init__/__repr__/__eq__ for us
 @dataclass(frozen=True)
 class Step:
     """A single named bootstrap step."""
 
-    name: str  # identifier used by --only and in the logs
-    # Callable[[Settings], None] is a TYPE describing a function value: one that
-    # takes a single Settings argument and returns None. Each service's `run`
-    # function fits this shape, so we can store it here and call it later.
+    name: str
     run: Callable[[Settings], None]
-    # field(default=False) gives this field a default value, so most Steps omit it;
-    # only the must-not-fail steps pass critical=True in STEPS below.
     critical: bool = field(default=False)
 
 
-# Order matters: Homebrew provides git/chezmoi before clone/apply run; Neovim's
-# plugin sync needs nvim from brew bundle, etc.
-# tuple[Step, ...]: a tuple of any length whose items are all Step. The '...' means
-# "variadic length" (not "fill this in"); a tuple (vs list) keeps the order fixed.
+# Order matters: Homebrew provides git/chezmoi before clone/apply; Neovim's
+# plugin sync needs nvim from brew bundle; etc.
 STEPS: tuple[Step, ...] = (
     Step("homebrew", homebrew.run),
     Step("git_ssh", git_ssh.run, critical=True),
@@ -70,31 +64,43 @@ def step_names() -> list[str]:
     return [step.name for step in STEPS]
 
 
-def run(settings: Settings, only: Sequence[str] | None = None) -> int:
+def run(
+    settings: Settings,
+    only: Sequence[str] | None = None,
+    *,
+    dry_run: bool = False,
+    assume_yes: bool = False,
+    strict: bool = False,
+) -> int:
     """Execute the steps and return a process exit code.
 
     Args:
         settings: Resolved filesystem settings.
         only: When given, run only these step names (in declared order).
+        dry_run: When True, mutating commands are logged instead of executed
+            (read-only probes still run so detection logic stays correct).
+        assume_yes: When True, services skip interactive prompts.
+        strict: When True, the checks step fails if core tools are missing.
 
     Returns:
         ``0`` on success, ``1`` if a critical step failed.
     """
-    failures = 0  # counts non-critical steps that errored but didn't abort the run
-    for step in STEPS:  # iterate in declared order (STEPS is ordered)
-        # --only filter: when given, skip any step whose name isn't in the list.
+    runtime.configure(assume_yes=assume_yes, strict=strict)
+    if dry_run:
+        shell.set_runner(shell.DryRunner())
+        logger.info("Dry run: mutating commands will be logged, not executed.")
+    failures = 0
+    for step in STEPS:
         if only and step.name not in only:
-            continue  # 'continue' jumps straight to the next loop iteration
+            continue
         logger.info("== %s ==", step.name)
-        try:  # guard each step so one failure can't crash the whole bootstrap
-            step.run(settings)  # call this service's run() function
-        except DotfilesError as exc:  # only catch OUR errors; real bugs still surface
+        try:
+            step.run(settings)
+        except DotfilesError as exc:  # only our errors; real bugs still surface
             failures += 1
-            if step.critical:  # critical steps (git_ssh, chezmoi) must not continue
+            if step.critical:
                 logger.error("%s failed (critical): %s", step.name, exc)
-                return 1  # bail out early with a failure exit code
-            # non-critical step: warn and carry on to the next step
+                return 1
             logger.warning("%s had issues: %s", step.name, exc)
     logger.info("Bootstrap complete.")
-    # Ternary expression: 1 if any non-critical step failed, else 0 (the exit code).
     return 1 if failures else 0

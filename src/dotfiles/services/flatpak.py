@@ -17,8 +17,8 @@ def read_ids(path: Path) -> list[str]:
     """Return the application ids in ``path`` (one per line, ``#`` comments)."""
     ids: list[str] = []
     for raw in path.read_text(encoding="utf-8").splitlines():
-        app = raw.split("#", 1)[0].strip()  # drop an inline '# comment', then trim
-        if app:  # skip blank lines
+        app = raw.split("#", 1)[0].strip()
+        if app:
             ids.append(app)
     return ids
 
@@ -31,9 +31,9 @@ def install_all(ids: list[str]) -> None:
     )
     for app in ids:
         installed = shell.run(["flatpak", "info", app], check=False, capture=True)
-        if installed.returncode == 0:  # 0 means it is already installed
+        if installed.returncode == 0:
             logger.info("already installed: %s", app)
-            continue  # skip to the next id
+            continue
         logger.info("installing: %s", app)
         shell.run(
             [
