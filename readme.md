@@ -9,11 +9,12 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 ## Model
 
 - **Home files → chezmoi** (`home/` source state via `.chezmoiroot`).
-- **CLI tools → Homebrew** (`brewfile`), identical on every target.
+- **CLI tools → Homebrew** (`brewfile`), shared across targets with small per-OS sections.
 - **GUI apps → Homebrew Casks on macOS, native Flatpak on Linux** (`flatpaks`).
 - **Ghostty** → Homebrew cask on macOS; `scottames/ghostty` COPR layered with `rpm-ostree` on atomic Fedora.
 - **Warp** → Homebrew cask on macOS; official Warp RPM repo layered with `rpm-ostree` on atomic Fedora.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
+- **Containers** → Apple `container` on macOS (incl. `container k8s` for local clusters); `docker` on Linux.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`; Hammerspoon on macOS.
 
 Flatpaks install via a dedicated step (not `brew bundle`). Flatpak **overrides** are applied by chezmoi under `~/.local/share/flatpak/overrides/`.
