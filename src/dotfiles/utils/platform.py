@@ -6,8 +6,9 @@ import platform as _platform  # 'import X as Y': alias avoids clashing with THIS
 from enum import Enum  # Enum: base class for a set of named constant members
 from pathlib import Path  # Path: object-oriented filesystem paths
 
-# Path objects (not plain strings) for the files we probe.
-_OS_RELEASE = Path("/etc/os-release")
+# Path objects (not plain strings) for the files we probe. Exported (public name)
+# so system.py can share the same os-release path instead of redeclaring it.
+OS_RELEASE_PATH = Path("/etc/os-release")
 _OSTREE_MARKER = Path("/run/ostree-booted")
 
 
@@ -32,7 +33,7 @@ def os_kind() -> OSKind:  # the return type is an OSKind member
         return OSKind.UNKNOWN
     try:  # try/except guards code that might raise
         # Method chain: read the file's text, then .lower() returns a new string.
-        release = _OS_RELEASE.read_text(encoding="utf-8").lower()
+        release = OS_RELEASE_PATH.read_text(encoding="utf-8").lower()
     except OSError:  # catch filesystem errors (missing/unreadable file)
         release = ""  # fallback so the checks below still work
     if "bazzite" in release:  # 'in' tests substring membership
@@ -48,10 +49,13 @@ def is_mac() -> bool:  # '-> bool' returns True/False
 
 
 def is_linux() -> bool:
-    """Return True on any Linux."""
-    return _platform.system() == "Linux"
+    """Return True on any Linux (Bazzite and atomic Fedora included)."""
+    # Derive from os_kind() so there is a single source of truth: every Linux
+    # classification maps to one of these members; UNKNOWN/MAC do not.
+    return os_kind() in (OSKind.LINUX, OSKind.BAZZITE, OSKind.FEDORA_ATOMIC)
 
 
 def is_fedora_atomic() -> bool:
     """Return True on rpm-ostree systems (Bazzite included)."""
-    return _OSTREE_MARKER.exists()
+    # Bazzite is itself atomic, so it counts here too.
+    return os_kind() in (OSKind.FEDORA_ATOMIC, OSKind.BAZZITE)

@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 import re  # stdlib: regular expressions
-from pathlib import Path
 
+from .platform import OS_RELEASE_PATH  # single source of truth for the file path
 from .shell import run
-
-_OS_RELEASE = Path("/etc/os-release")
 
 
 def fedora_version_id(default: str = "40") -> str:
     """Return the Fedora ``VERSION_ID`` (e.g. ``"44"``), or ``default``."""
     try:
         # .splitlines() returns a list of lines; 'for ... in' walks them.
-        for line in _OS_RELEASE.read_text(encoding="utf-8").splitlines():
+        for line in OS_RELEASE_PATH.read_text(encoding="utf-8").splitlines():
             if line.startswith("VERSION_ID="):  # str method: prefix test
                 # split("=", 1) -> 2 parts on the first '='; [1] is the value,
                 # then strip whitespace and surrounding double quotes.
