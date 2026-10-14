@@ -4,18 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..config.data import REPOS
 from ..config.settings import Settings
 from ..utils import shell
 from ..utils.logging import get_logger
 
 logger = get_logger("git_ssh")
-
-# Tuple of (url, destination-relative-to-home) pairs to clone or update.
-_REPOS = (
-    ("git@github.com:bourbonfgiles/dotfiles.git", "repos/personal/dotfiles"),
-    ("https://github.com/eza-community/eza-themes.git", "repos/personal/eza-themes"),
-    ("https://github.com/syl20bnr/spacemacs.git", ".emacs.d"),
-)
 
 
 def _git_config(key: str) -> str:
@@ -97,5 +91,5 @@ def run(settings: Settings) -> None:
     email = _configure_identity()
     _ensure_ssh_key(email)
     (settings.home / "repos" / "personal").mkdir(parents=True, exist_ok=True)
-    for url, rel in _REPOS:  # tuple unpacking: url, rel come from each pair
+    for url, rel in REPOS:  # tuple unpacking: url, rel come from each pair
         _clone_or_update(url, settings.home / rel)

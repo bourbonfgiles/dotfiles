@@ -6,15 +6,25 @@ import os
 import tempfile
 from pathlib import Path
 
+from ..config.data import (
+    GNOME_EXT_DASH as DASH,
+)
+from ..config.data import (
+    GNOME_EXT_FOCUS as FOCUS,
+)
+from ..config.data import (
+    GNOME_EXT_TILING as TILING,
+)
+from ..config.data import (
+    TILINGSHELL_REPO,
+    TILINGSHELL_TAG,
+)
 from ..config.settings import Settings
 from ..utils import platform, shell
 from ..utils.logging import get_logger
 
 logger = get_logger("gnome")
 
-DASH = "dash-to-dock@micxgx.gmail.com"
-TILING = "tilingshell@ferrarodomenico.com"
-FOCUS = "steal-my-focus-window@steal-my-focus-window"
 _EXT_DIR = Path.home() / ".local/share/gnome-shell/extensions"
 _MEDIA_KEYS = "org.gnome.settings-daemon.plugins.media-keys"
 _ALBERT_KB = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/albert/"
@@ -55,7 +65,7 @@ def _install_ext(uuid: str) -> bool:
 
 
 def _install_tilingshell_github() -> bool:
-    """Build Tiling Shell's v18 branch from source (GNOME 50 fallback)."""
+    """Build Tiling Shell from source at the pinned tag (GNOME 50 fallback)."""
     if not (shell.command_exists("git") and shell.command_exists("npm")):
         return False
     tmp = Path(tempfile.mkdtemp())
@@ -66,8 +76,8 @@ def _install_tilingshell_github() -> bool:
             "--depth",
             "1",
             "--branch",
-            "v18.0",
-            "https://github.com/domferr/tilingshell.git",
+            TILINGSHELL_TAG,
+            TILINGSHELL_REPO,
             str(tmp / "src"),
         ],
         check=False,

@@ -108,3 +108,25 @@ class TestChezmoiApply:
         assert fake_runner.ran(
             "chezmoi", "apply", "--source", str(settings.repo_root), "--force"
         )
+
+
+class TestConfigData:
+    def test_checks_use_central_data(self) -> None:
+        from dotfiles.config import data
+        from dotfiles.services import checks
+
+        # checks must read from the central lists, not re-declare its own.
+        assert checks.CORE_TOOLS is data.CORE_TOOLS
+        assert checks.LINKED_CONFIGS is data.LINKED_CONFIGS
+
+    def test_git_ssh_uses_central_repos(self) -> None:
+        from dotfiles.config import data
+        from dotfiles.services import git_ssh
+
+        assert git_ssh.REPOS is data.REPOS
+
+    def test_fonts_use_central_data(self) -> None:
+        from dotfiles.config import data
+        from dotfiles.services import fonts
+
+        assert fonts.NERD_FONTS is data.NERD_FONTS
