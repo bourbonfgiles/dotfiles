@@ -21,6 +21,11 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--verbose", action="store_true", help="enable debug logging")
     parser.add_argument("--list", action="store_true", help="list steps and exit")
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="log mutating commands instead of running them (probes still run)",
+    )
+    parser.add_argument(
         "--only",
         nargs="+",  # accept one or more values, e.g. --only gnome fonts
         metavar="STEP",  # placeholder name shown in --help
@@ -45,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     except DotfilesError as exc:
         log.error("%s", exc)  # report cleanly instead of dumping a traceback
         return 1  # 1 = failure exit code
-    return bootstrap.run(settings, only=args.only)  # hand off to the orchestrator
+    return bootstrap.run(settings, only=args.only, dry_run=args.dry_run)
 
 
 # This block runs only when executed as a program (python -m dotfiles), not on import.

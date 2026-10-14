@@ -22,6 +22,7 @@ from .services import (
     shell_default,
     warp,
 )
+from .utils import shell
 from .utils.exceptions import DotfilesError
 from .utils.logging import get_logger
 
@@ -70,16 +71,26 @@ def step_names() -> list[str]:
     return [step.name for step in STEPS]
 
 
-def run(settings: Settings, only: Sequence[str] | None = None) -> int:
+def run(
+    settings: Settings,
+    only: Sequence[str] | None = None,
+    *,
+    dry_run: bool = False,
+) -> int:
     """Execute the steps and return a process exit code.
 
     Args:
         settings: Resolved filesystem settings.
         only: When given, run only these step names (in declared order).
+        dry_run: When True, mutating commands are logged instead of executed
+            (read-only probes still run so detection logic stays correct).
 
     Returns:
         ``0`` on success, ``1`` if a critical step failed.
     """
+    if dry_run:  # swap the real executor for one that only logs mutations
+        shell.set_runner(shell.DryRunner())
+        logger.info("Dry run: mutating commands will be logged, not executed.")
     failures = 0  # counts non-critical steps that errored but didn't abort the run
     for step in STEPS:  # iterate in declared order (STEPS is ordered)
         # --only filter: when given, skip any step whose name isn't in the list.
