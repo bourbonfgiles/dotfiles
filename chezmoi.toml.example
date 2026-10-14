@@ -1,0 +1,13 @@
+# Copy to ~/.config/chezmoi/chezmoi.toml on a work machine (do not commit).
+# Then: chezmoi --source ~/repos/personal/dotfiles apply
+#
+# [data.git] overrides personal defaults from home/.chezmoidata.toml if needed.
+# [data.git.work] drives ~/.config/git/config-work for ~/repos/vitalhub/ only.
+
+# [data.git]
+# name = "bourbonfgiles"
+# email = "giles@live.co.uk"
+
+[data.git.work]
+name = "Your Name"
+email = "you@company.com"

@@ -13,6 +13,14 @@
 [rerere]
 	enabled = true
 
+# Personal default (github.com)
 [user]
 	name = {{ .git.name }}
 	email = {{ .git.email }}
+
+# Work trees: optional corp author from machine-local chezmoi data (not in git).
+# Clones under ~/repos/vitalhub/ pick up ~/.config/git/config-work when set.
+[includeIf "gitdir:~/repos/vitalhub/"]
+	path = ~/.config/git/config-work
+[includeIf "gitdir:{{ .chezmoi.homeDir }}/repos/vitalhub/"]
+	path = ~/.config/git/config-work

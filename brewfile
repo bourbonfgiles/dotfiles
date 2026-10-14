@@ -20,19 +20,15 @@ tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
 tap "idoavrah/homebrew"
 tap "jorgerojas26/lazysql"
-tap "julien-cpsn/atac"
 tap "Valkyrie00/homebrew-bbrew"
 
 # Core
 brew "argocd"
 brew "bat"
-brew "bottom"
 brew "bbrew"
 brew "carapace"
 brew "cloudflare/cloudflare/cf-terraforming"
-brew "colima" #see also lima
 brew "direnv"
-brew "docker"
 brew "duf"
 brew "e1s"
 brew "eza"
@@ -47,17 +43,11 @@ brew "helmfile"
 brew "idoavrah/homebrew/tftui"
 brew "ipcalc"
 brew "jq"
-brew "julien-cpsn/atac/atac"
 brew "k9s"
-brew "kubecm"
 brew "kubernetes-cli"
-brew "ktop"
-brew "lazydocker"
 brew "lazygit"
 brew "lazysql"
-brew "lima"
 brew "lua"
-brew "kind"
 brew "neovim"
 brew "node"
 brew "nushell"
@@ -71,9 +61,8 @@ brew "starship"
 brew "chezmoi"
 brew "tenv"
 brew "terraform-docs"
-brew "tldr"
+brew "tlrc"
 brew "typescript"
-brew "yank"
 brew "yarn"
 brew "yazi"
 brew "zoxide"
@@ -114,6 +103,8 @@ if OS.mac?
 
   brew "emacs-plus@30", args: ["with-native-comp"]
 
+  brew "container"
+
   # Fonts
   cask "font-fira-code-nerd-font"
   cask "font-hack-nerd-font"
@@ -124,7 +115,6 @@ if OS.mac?
   cask "beekeeper-studio"
   cask "ghostty"
   cask "hammerspoon"
-  cask "insomnia"
   cask "neovide-app"
   cask "pgadmin4"
   cask "podman-desktop"
@@ -145,6 +135,7 @@ end
 # 3) Linux only  (Bazzite + Silverblue)
 ################################################################################
 if OS.linux?
+  brew "docker"
   brew "emacs"
   brew "wl-clipboard"
   brew "xclip"
