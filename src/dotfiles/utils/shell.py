@@ -23,9 +23,8 @@ def command_exists(name: str) -> bool:
     return shutil.which(name) is not None  # 'is not None' = explicit None test
 
 
-# A Runner is anything with a run() method of this shape. Making the executor a
-# swappable object (rather than calling subprocess directly) is the single seam
-# that unlocks both --dry-run (DryRunner) and unit testing (a fake in tests).
+# Making the executor swappable (rather than calling subprocess directly) is the
+# seam that unlocks both --dry-run and unit testing.
 class Runner(Protocol):
     """Structural type: an object that can execute a command."""
 
@@ -108,7 +107,7 @@ class DryRunner:
                 cwd=cwd,
             )
         logger.info("[dry-run] would run: %s", " ".join(cmd))
-        # Fabricate a success result so callers treat the step as having worked.
+        # Success-shaped result so callers proceed as if the command had run.
         return subprocess.CompletedProcess(
             list(cmd), returncode=0, stdout="", stderr=""
         )

@@ -52,7 +52,7 @@ class TestFlatpak:
     ) -> None:
         monkeypatch.setattr(platform, "is_mac", lambda: True)
         flatpak.run(settings)
-        assert fake_runner.calls == []  # nothing attempted on macOS
+        assert fake_runner.calls == []
 
 
 class TestHomebrew:

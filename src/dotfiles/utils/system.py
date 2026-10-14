@@ -6,7 +6,7 @@ import re  # stdlib: regular expressions
 from pathlib import Path
 
 from .logging import get_logger
-from .platform import OS_RELEASE_PATH  # single source of truth for the file path
+from .platform import OS_RELEASE_PATH
 from .shell import run
 
 logger = get_logger("system")

@@ -66,7 +66,7 @@ class FakeRunner:
         return subprocess.CompletedProcess(argv, returncode, stdout, stderr)
 
     def _match(self, argv: list[str]) -> tuple[int, str, str]:
-        # Prefer the longest matching prefix so specific scripts win over broad ones.
+        # Longest matching prefix wins, so specific scripts beat broad ones.
         best: tuple[int, str, str] | None = None
         best_len = -1
         for prefix, result in self._scripts.items():

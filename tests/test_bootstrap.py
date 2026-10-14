@@ -26,7 +26,7 @@ def recording_steps(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
     steps = (
         make("alpha"),
-        make("beta", fail=True),  # non-critical failure
+        make("beta", fail=True),
         make("gamma"),
     )
     monkeypatch.setattr(bootstrap, "STEPS", steps)
@@ -53,7 +53,6 @@ def test_only_filters_but_preserves_order(
         bootstrap.Step(n, lambda _s, n=n: order.append(n)) for n in ("a", "b", "c")
     )
     monkeypatch.setattr(bootstrap, "STEPS", steps)
-    # Pass out of order; declared order must still be honoured.
     bootstrap.run(settings, only=["c", "a"])
     assert order == ["a", "c"]
 
@@ -62,7 +61,6 @@ def test_non_critical_failure_continues_and_exits_one(
     recording_steps: list[str], settings: Settings
 ) -> None:
     code = bootstrap.run(settings)
-    # beta failed (non-critical) but gamma still ran.
     assert recording_steps == ["alpha", "beta", "gamma"]
     assert code == 1
 
@@ -84,7 +82,7 @@ def test_critical_failure_aborts(
     monkeypatch.setattr(bootstrap, "STEPS", steps)
     code = bootstrap.run(settings)
     assert code == 1
-    assert "never" not in order  # aborted before the step after the critical one
+    assert "never" not in order
 
 
 def test_non_dotfiles_errors_propagate(

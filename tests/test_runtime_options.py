@@ -25,7 +25,6 @@ class TestAssumeYes:
         runtime.configure(assume_yes=True)
         # git config returns empty (unset) for both keys via the default match.
         monkeypatch.setattr(builtins, "input", _no_input)
-        # Should return without raising and without calling input().
         assert git_ssh._configure_identity() == ""
 
     def test_identity_prompts_when_interactive(
@@ -58,4 +57,4 @@ class TestStrictChecks:
     ) -> None:
         runtime.configure(strict=False)
         monkeypatch.setattr(shell, "command_exists", lambda _n: False)
-        checks.run(settings)  # must not raise
+        checks.run(settings)

@@ -27,9 +27,7 @@ class TestEnsureRepoFile:
 
 class TestInstallOrMigrate:
     def test_fresh_install_layers_package(self, fake_runner: FakeRunner) -> None:
-        fake_runner.script(
-            ["rpm", "-q", "warp-terminal"], returncode=1
-        )  # not installed
+        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=1)
         system.rpmostree_install_or_migrate("warp-terminal", label="Warp")
         assert fake_runner.ran(
             "sudo", "rpm-ostree", "install", "--idempotent", "warp-terminal"
@@ -37,7 +35,7 @@ class TestInstallOrMigrate:
         assert not fake_runner.ran("sudo", "rpm-ostree", "uninstall")
 
     def test_migrates_local_package(self, fake_runner: FakeRunner) -> None:
-        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=0)  # installed
+        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=0)
         fake_runner.script(
             ["rpm-ostree", "status"], stdout="LocalPackages: warp-terminal-1\n"
         )
@@ -46,7 +44,7 @@ class TestInstallOrMigrate:
         assert fake_runner.ran("sudo", "rpm-ostree", "install", "warp-terminal")
 
     def test_already_repo_layered_is_noop(self, fake_runner: FakeRunner) -> None:
-        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=0)  # installed
+        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=0)
         fake_runner.script(["rpm-ostree", "status"], stdout="no local packages here\n")
         system.rpmostree_install_or_migrate("warp-terminal", label="Warp")
         assert not fake_runner.ran("sudo", "rpm-ostree", "uninstall")

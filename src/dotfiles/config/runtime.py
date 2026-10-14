@@ -16,11 +16,10 @@ from dataclasses import dataclass
 class Options:
     """Per-run behaviour switches."""
 
-    assume_yes: bool = False  # --yes: never block on interactive prompts
-    strict: bool = False  # --strict: checks step fails on anything missing
+    assume_yes: bool = False  # --yes
+    strict: bool = False  # --strict
 
 
-# The active options for this process. Replaced once by configure() at startup.
 _options = Options()
 
 
