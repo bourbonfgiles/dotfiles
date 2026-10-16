@@ -33,7 +33,11 @@ _CREATE_TIMEOUT = "300s"
 # Holds the control plane, Cilium, and a JVM game server at once; 2 GB OOMs.
 _MACHINE_MEMORY_MB = 8192
 _REGISTRY_NAME = "k3d-registry.localhost"
-_REGISTRY_PORT = "5000"
+# 5000 is taken by macOS AirPlay Receiver, so publish the registry on 5050;
+# the config mirror still targets the container's internal 5000.
+_REGISTRY_HOST_PORT = "5050"
+# Podman's default bridge network is "podman", not the "bridge" k3d assumes.
+_PODMAN_NETWORK = "podman"
 
 
 def _machine_field(field: str) -> object | None:
@@ -183,14 +187,12 @@ def _ensure_registry(env: dict[str, str]) -> bool:
     if _REGISTRY_NAME in listed or f"k3d-{_REGISTRY_NAME}" in listed:
         return True
     logger.info("Creating k3d registry %r…", _REGISTRY_NAME)
-    return (
-        shell.run(
-            ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_PORT],
-            check=False,
-            env=_run_env(env),
-        ).returncode
-        == 0
-    )
+    cmd = ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_HOST_PORT]
+    # macOS runs k3d against Podman, whose default network is "podman"; Linux
+    # (Bazzite/Fedora) uses Docker, where k3d's assumed "bridge" network exists.
+    if platform.is_mac():
+        cmd += ["--default-network", _PODMAN_NETWORK]
+    return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
 
 
 def create_cluster(name: str = CLUSTER_NAME) -> bool:
