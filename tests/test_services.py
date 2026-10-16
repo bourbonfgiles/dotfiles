@@ -8,7 +8,6 @@ from dotfiles.config.settings import Settings
 from dotfiles.services import chezmoi_apply, flatpak, homebrew, k8s
 from dotfiles.utils import platform, shell
 from dotfiles.utils.exceptions import StepError
-from dotfiles.utils.platform import OSKind
 from tests.conftest import FakeRunner
 
 
@@ -146,61 +145,47 @@ class TestConfigData:
 
 
 class TestK8s:
-    def test_launcher_is_container_on_mac(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.MAC)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "container")
-        assert k8s._launcher() == ("container", "Apple container k8s")
-
-    def test_launcher_is_k3d_on_linux(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.BAZZITE)
-        monkeypatch.setattr(platform, "is_linux", lambda: True)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
-        assert k8s._launcher() == ("k3d", "k3d")
-
-    def test_launcher_none_when_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.MAC)
-        monkeypatch.setattr(shell, "command_exists", lambda _n: False)
-        assert k8s._launcher() is None
-
-    def test_create_argv_is_three_nodes_per_launcher(self) -> None:
-        # 1 control plane + 2 workers on both launchers.
-        assert k8s._create_argv("container", "dev", 2) == [
-            "container",
-            "k8s",
-            "create",
-            "--name",
-            "dev",
-            "--workers",
-            "2",
-        ]
-        assert k8s._create_argv("k3d", "dev", 2) == [
-            "k3d",
-            "cluster",
-            "create",
-            "dev",
-            "--servers",
-            "1",
-            "--agents",
-            "2",
-        ]
-
-    def test_create_cluster_runs_launcher(
+    def test_create_cluster_runs_k3d_on_linux(
         self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
     ) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.BAZZITE)
-        monkeypatch.setattr(platform, "is_linux", lambda: True)
+        monkeypatch.setattr(platform, "is_mac", lambda: False)
         monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
         assert k8s.create_cluster("dev", 2) is True
         assert fake_runner.ran(
             "k3d", "cluster", "create", "dev", "--servers", "1", "--agents", "2"
         )
 
-    def test_create_cluster_noop_without_launcher(
+    def test_create_cluster_sets_docker_host_on_mac(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(platform, "is_mac", lambda: True)
+        monkeypatch.setattr(shell, "command_exists", lambda _n: True)
+        monkeypatch.setattr(k8s, "_ensure_podman_machine", lambda: True)
+        monkeypatch.setattr(k8s, "_podman_socket", lambda: "/tmp/p.sock")
+        seen: dict[str, str] = {}
+
+        def fake_run(cmd, *, check, env=None, **kw):  # type: ignore[no-untyped-def]
+            seen.update(env or {})
+            import subprocess
+
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(shell, "run", fake_run)
+        assert k8s.create_cluster("dev", 2) is True
+        assert seen["DOCKER_HOST"] == "unix:///tmp/p.sock"
+
+    def test_create_cluster_noop_without_k3d(
         self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
     ) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.MAC)
         monkeypatch.setattr(shell, "command_exists", lambda _n: False)
         assert k8s.create_cluster() is False
         assert fake_runner.calls == []
+
+    def test_create_cluster_noop_when_mac_runtime_missing(
+        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
+    ) -> None:
+        monkeypatch.setattr(platform, "is_mac", lambda: True)
+        # k3d exists, but podman does not -> no Docker API available.
+        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
+        assert k8s.create_cluster() is False
+        assert not fake_runner.ran("k3d", "cluster", "create")
