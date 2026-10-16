@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from dotfiles.config.settings import Settings
@@ -146,18 +148,29 @@ class TestConfigData:
 
 class TestK8s:
     def test_create_cluster_runs_k3d_on_linux(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        tmp_path: Path,
     ) -> None:
+        config = tmp_path / "k3d" / "config.yaml"
+        config.parent.mkdir(parents=True)
+        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
         monkeypatch.setattr(platform, "is_mac", lambda: False)
         monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
-        assert k8s.create_cluster("dev", 2) is True
+        assert k8s.create_cluster("dev") is True
         assert fake_runner.ran(
-            "k3d", "cluster", "create", "dev", "--servers", "1", "--agents", "2"
+            "k3d", "cluster", "create", "dev", "--config", str(config)
         )
 
     def test_create_cluster_sets_docker_host_on_mac(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
+        config = tmp_path / "k3d" / "config.yaml"
+        config.parent.mkdir(parents=True)
+        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
         monkeypatch.setattr(platform, "is_mac", lambda: True)
         monkeypatch.setattr(shell, "command_exists", lambda _n: True)
         monkeypatch.setattr(k8s, "_ensure_podman_machine", lambda: True)
@@ -171,7 +184,7 @@ class TestK8s:
             return subprocess.CompletedProcess(cmd, 0, "", "")
 
         monkeypatch.setattr(shell, "run", fake_run)
-        assert k8s.create_cluster("dev", 2) is True
+        assert k8s.create_cluster("dev") is True
         assert seen["DOCKER_HOST"] == "unix:///tmp/p.sock"
 
     def test_create_cluster_noop_without_k3d(

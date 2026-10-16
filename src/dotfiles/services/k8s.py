@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 from ..config.settings import Settings
 from ..utils import platform, shell
@@ -20,15 +21,23 @@ from ..utils.logging import get_logger
 
 logger = get_logger("k8s")
 
-# "Classic 3-node": one server (control plane) + two agents (workers).
+# Node counts, versions, disabled components, and port maps live in the
+# chezmoi-managed config at ~/.config/k3d/config.yaml.
 CLUSTER_NAME = "dev"
-_AGENTS = 2
 _PODMAN_MACHINE = "podman-machine-default"
 # applehv needs no extra binary (libkrun would require krunkit). Multi-node k3d
 # only works on a rootful machine — rootless leaves agents stuck in "Created".
 _PODMAN_PROVIDER = "applehv"
 # First run pulls the k3s image through Podman, which outlasts k3d's default.
 _CREATE_TIMEOUT = "300s"
+# Holds the control plane, Cilium, and a JVM game server at once; 2 GB OOMs.
+_MACHINE_MEMORY_MB = 8192
+_REGISTRY_NAME = "k3d-registry.localhost"
+# 5000 is taken by macOS AirPlay Receiver, so publish the registry on 5050;
+# the config mirror still targets the container's internal 5000.
+_REGISTRY_HOST_PORT = "5050"
+# Podman's default bridge network is "podman", not the "bridge" k3d assumes.
+_PODMAN_NETWORK = "podman"
 
 
 def _machine_field(field: str) -> object | None:
@@ -72,17 +81,47 @@ def _machine_running() -> bool:
     )
 
 
-def _ensure_rootful() -> bool:
-    """Make the (running) machine rootful; multi-node k3d requires it."""
-    if _machine_field("Rootful") is True:
+def _machine_memory_mb() -> int | None:
+    value = _machine_field("Resources")
+    if not isinstance(value, dict):
+        return None
+    memory = value.get("Memory")
+    return memory if isinstance(memory, int) else None
+
+
+def _ensure_resources() -> bool:
+    """Make the machine rootful and give it enough memory; k3d requires both.
+
+    Both are stopped-machine operations, so they are batched into one
+    stop/set/start cycle. Rootful is mandatory for multi-node; the memory bump
+    keeps the control plane plus Cilium and workloads off the OOM killer.
+    """
+    rootful = _machine_field("Rootful") is True
+    sized = (_machine_memory_mb() or 0) >= _MACHINE_MEMORY_MB
+    if rootful and sized:
         return True
-    logger.info("Switching Podman machine to rootful (needed for multi-node)…")
+    logger.info("Reconfiguring Podman machine (rootful + %d MB)…", _MACHINE_MEMORY_MB)
     shell.run(["podman", "machine", "stop", _PODMAN_MACHINE], check=False)
-    shell.run(["podman", "machine", "set", "--rootful", _PODMAN_MACHINE], check=False)
+    shell.run(
+        [
+            "podman",
+            "machine",
+            "set",
+            "--rootful",
+            "--memory",
+            str(_MACHINE_MEMORY_MB),
+            _PODMAN_MACHINE,
+        ],
+        check=False,
+    )
     started = shell.run(
         ["podman", "machine", "start", _PODMAN_MACHINE], check=False
     ).returncode
-    return started == 0 and _machine_field("Rootful") is True
+    return (
+        started == 0
+        and _machine_field("Rootful") is True
+        and (_machine_memory_mb() or 0) >= _MACHINE_MEMORY_MB
+    )
 
 
 def _ensure_podman_machine() -> bool:
@@ -103,7 +142,7 @@ def _ensure_podman_machine() -> bool:
             != 0
         ):
             return False
-    return _ensure_rootful()
+    return _ensure_resources()
 
 
 def _docker_env() -> dict[str, str] | None:
@@ -131,8 +170,38 @@ def _run_env(extra: dict[str, str]) -> dict[str, str]:
     return env
 
 
-def create_cluster(name: str = CLUSTER_NAME, agents: int = _AGENTS) -> bool:
-    """Create a 1-server + ``agents`` k3d cluster; return True on success."""
+def _config_file() -> Path:
+    """Path to the chezmoi-managed k3d cluster config."""
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+    return config_home / "k3d" / "config.yaml"
+
+
+def _ensure_registry(env: dict[str, str]) -> bool:
+    """Ensure the shared local registry the cluster config mirrors exists."""
+    listed = shell.run(
+        ["k3d", "registry", "list", "--output", "json"],
+        check=False,
+        capture=True,
+        env=_run_env(env),
+    ).stdout
+    if _REGISTRY_NAME in listed or f"k3d-{_REGISTRY_NAME}" in listed:
+        return True
+    logger.info("Creating k3d registry %r…", _REGISTRY_NAME)
+    cmd = ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_HOST_PORT]
+    # macOS runs k3d against Podman, whose default network is "podman"; Linux
+    # (Bazzite/Fedora) uses Docker, where k3d's assumed "bridge" network exists.
+    if platform.is_mac():
+        cmd += ["--default-network", _PODMAN_NETWORK]
+    return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
+
+
+def create_cluster(name: str = CLUSTER_NAME) -> bool:
+    """Create the k3d cluster from the tracked config; return True on success.
+
+    The config pins the k3s version, disables Traefik, servicelb, Flannel, the
+    default network policy, and kube-proxy, and maps the host ports. A CNI is
+    expected to be installed afterwards (handled outside this step).
+    """
     if not shell.command_exists("k3d"):
         logger.warning("k3d not found; cannot create a cluster.")
         return False
@@ -140,7 +209,14 @@ def create_cluster(name: str = CLUSTER_NAME, agents: int = _AGENTS) -> bool:
     if extra is None:
         logger.warning("No Docker API runtime available (Podman machine?).")
         return False
-    logger.info("Creating k3d cluster %r (1 server + %d agents)…", name, agents)
+    config = _config_file()
+    if not config.is_file():
+        logger.warning("k3d config not found at %s; run chezmoi apply.", config)
+        return False
+    if not _ensure_registry(extra):
+        logger.warning("Could not ensure the local registry; aborting create.")
+        return False
+    logger.info("Creating k3d cluster %r from %s…", name, config)
     return (
         shell.run(
             [
@@ -148,10 +224,8 @@ def create_cluster(name: str = CLUSTER_NAME, agents: int = _AGENTS) -> bool:
                 "cluster",
                 "create",
                 name,
-                "--servers",
-                "1",
-                "--agents",
-                str(agents),
+                "--config",
+                str(config),
                 "--timeout",
                 _CREATE_TIMEOUT,
             ],
