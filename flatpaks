@@ -19,8 +19,7 @@ org.gnome.Evolution
 # Dev / DevOps GUIs
 dev.zed.Zed
 com.getpostman.Postman
-rest.insomnia.Insomnia
-org.pgadmin.pgadmin4
+io.beekeeperstudio.Studio
 io.podman_desktop.PodmanDesktop
 dev.neovide.neovide
 

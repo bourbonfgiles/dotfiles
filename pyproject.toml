@@ -15,21 +15,13 @@ authors = [{ name = "bourbonfgiles" }]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["black", "isort", "ruff", "mypy", "pytest"]
+dev = ["ruff", "mypy", "pytest"]
 
 [project.scripts]
 dotfiles-bootstrap = "dotfiles.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.black]
-line-length = 88
-target-version = ["py310"]
-
-[tool.isort]
-profile = "black"
-line_length = 88
 
 [tool.ruff]
 line-length = 88

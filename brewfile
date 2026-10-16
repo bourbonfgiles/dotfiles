@@ -19,7 +19,6 @@ tap "argoproj/tap"
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
 tap "idoavrah/homebrew"
-tap "jorgerojas26/lazysql"
 tap "Valkyrie00/homebrew-bbrew"
 
 # Core
@@ -46,15 +45,12 @@ brew "jq"
 brew "k9s"
 brew "kubernetes-cli"
 brew "lazygit"
-brew "lazysql"
 brew "lua"
 brew "neovim"
 brew "node"
-brew "nushell"
 brew "podman"
 brew "postgresql"
 brew "pre-commit"
-brew "python"
 brew "ripgrep"
 brew "rust"
 brew "starship"
@@ -75,7 +71,6 @@ brew "azure-cli"
 brew "azure/kubelogin/kubelogin"
 brew "powershell"
 brew "uv"
-brew "pipx"
 
 # Linters & formatters
 brew "ruff"
@@ -93,6 +88,13 @@ brew "dive"
 brew "krew"
 brew "stern"
 
+# GitOps / cluster tooling
+brew "flux"
+brew "cmctl"
+brew "cilium-cli"
+brew "eksctl"
+brew "kubeconform"
+
 
 ################################################################################
 # 2) macOS only
@@ -101,7 +103,7 @@ if OS.mac?
   tap "d12frosted/emacs-plus"
   tap "nikitabobko/tap"
 
-  brew "emacs-plus@30", args: ["with-native-comp"]
+  brew "emacs-plus@30"
 
   brew "container"
 
@@ -110,22 +112,21 @@ if OS.mac?
   cask "font-hack-nerd-font"
   cask "font-jetbrains-mono-nerd-font"
 
-  # GUI apps (parity with flatpaks)
+  # GUI apps (parity with flatpaks; OnlyOffice omitted — corp Office 365)
   cask "alfred"
   cask "beekeeper-studio"
   cask "ghostty"
   cask "hammerspoon"
   cask "neovide-app"
-  cask "pgadmin4"
   cask "podman-desktop"
   cask "postman"
+  cask "signal"
   cask "slack"
   cask "spotify"
   cask "warp"
   cask "zed"
   cask "zen"
   cask "zoom"
-  cask "firefox"
   cask "microsoft-office"
   # cask "cloudflare-warp"
 end
@@ -137,6 +138,7 @@ end
 if OS.linux?
   brew "docker"
   brew "emacs"
+  brew "k3d"
   brew "wl-clipboard"
   brew "xclip"
 end

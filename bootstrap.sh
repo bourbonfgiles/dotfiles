@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 # Fresh-machine entry point. POSIX sh runs on every target (macOS, Bazzite,
 # Silverblue) before anything else is installed. Its only jobs are to make sure
-# Homebrew and Python 3 exist, then hand off to the Python bootstrap package
-# which does all the real work.
+# Homebrew and uv exist, then hand off to the bootstrap package (run through uv,
+# which supplies its own Python) which does all the real work.
 #
 # Usage:
 #   sh ~/repos/personal/dotfiles/bootstrap.sh
@@ -35,19 +35,30 @@ if ! command -v brew >/dev/null 2>&1; then
   done
 fi
 
-# Python 3: prefer an interpreter already present, else install via Homebrew.
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON=python3
-else
-  log "Installing Python via Homebrew…"
-  brew install python
-  PYTHON=python3
-fi
-
-command -v "$PYTHON" >/dev/null 2>&1 || { err "Python 3 unavailable after install."; exit 1; }
-
-log "Starting the Python bootstrap ($("$PYTHON" --version 2>&1))…"
-# Run the package straight from the source tree; no install step required.
+# Interpreter: run the stdlib-only bootstrap package with uv, which manages its
+# own Python (downloading one if the host has none). uv is the single Python
+# toolchain across every target; a system python3 is only a last-resort fallback.
 PYTHONPATH="$SCRIPT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONPATH
-exec "$PYTHON" -m dotfiles "$@"
+
+if ! command -v uv >/dev/null 2>&1; then
+  log "Installing uv…"
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  for prefix in "$HOME/.local/bin" "$HOME/.cargo/bin"; do
+    [ -x "$prefix/uv" ] && PATH="$prefix:$PATH" && export PATH && break
+  done
+fi
+
+if command -v uv >/dev/null 2>&1; then
+  log "Starting the bootstrap via uv…"
+  exec uv run --python 3.10 python -m dotfiles "$@"
+fi
+
+# Fallback: no uv and its install failed — use any system python3.
+if command -v python3 >/dev/null 2>&1; then
+  log "uv unavailable; falling back to system python3…"
+  exec python3 -m dotfiles "$@"
+fi
+
+err "Neither uv nor python3 is available to run the bootstrap."
+exit 1

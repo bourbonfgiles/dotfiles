@@ -15,6 +15,7 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Warp** → Homebrew cask on macOS; official Warp RPM repo layered with `rpm-ostree` on atomic Fedora.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
 - **Containers** → Apple `container` on macOS (incl. `container k8s` for local clusters); `docker` on Linux.
+- **Local Kubernetes** → one 3-node (1 control plane + 2 workers) story everywhere: Apple `container k8s` on macOS, `k3d` on Linux. The `k8s` step only checks the launcher; create a cluster on demand via `k8s.create_cluster()`.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`; Hammerspoon on macOS.
 
 Flatpaks install via a dedicated step (not `brew bundle`). Flatpak **overrides** are applied by chezmoi under `~/.local/share/flatpak/overrides/`.
@@ -26,24 +27,24 @@ git clone git@github.com:bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles
 sh ~/repos/personal/dotfiles/bootstrap.sh
 ```
 
-`bootstrap.sh` ensures Homebrew + Python, then `python -m dotfiles` runs ordered steps: brew bundle, git/ssh, **chezmoi apply**, Linux GUI/layering, shell, DNS drop-ins, GNOME, fonts, neovim, checks.
+`bootstrap.sh` ensures Homebrew + uv, then `uv run python -m dotfiles` runs ordered steps: brew bundle, git/ssh, **chezmoi apply**, Linux GUI/layering, shell, DNS drop-ins, GNOME, fonts, neovim, checks.
 
 ```bash
-PYTHONPATH=src python3 -m dotfiles --list
-PYTHONPATH=src python3 -m dotfiles --only chezmoi
-PYTHONPATH=src python3 -m dotfiles --dry-run          # log mutations, don't apply
-PYTHONPATH=src python3 -m dotfiles --yes              # non-interactive (no prompts)
-PYTHONPATH=src python3 -m dotfiles --only checks --strict   # fail if a tool is missing
+uv run python -m dotfiles --list
+uv run python -m dotfiles --only chezmoi
+uv run python -m dotfiles --dry-run          # log mutations, don't apply
+uv run python -m dotfiles --yes              # non-interactive (no prompts)
+uv run python -m dotfiles --only checks --strict   # fail if a tool is missing
 ```
 
 ## Bootstrap flow
 
 ```mermaid
 flowchart TD
-  S[bootstrap.sh: ensure brew + python] --> M[python -m dotfiles]
+  S[bootstrap.sh: ensure brew + uv] --> M[uv run python -m dotfiles]
   M --> H["homebrew (brew bundle)"] --> G[git_ssh] --> C[chezmoi apply]
   C --> D{OS?}
-  D -->|Linux| E[flatpak → ghostty → warp → albert → gaming]
+  D -->|Linux| E[flatpak → ghostty → warp → albert → gaming → k8s]
   D -->|macOS| X[Casks cover GUI, Ghostty and Warp]
   E --> Z[shell_default → dns → gnome → fonts → neovim → checks]
   X --> Z
@@ -120,7 +121,7 @@ Config is split under `home/dot_config/ghostty/`:
 ## Dev checks
 
 ```bash
-ruff check src tests && ruff format src tests
-mypy src
-PYTHONPATH=src pytest
+uv run ruff check src tests && uv run ruff format src tests
+uv run mypy src
+uv run pytest
 ```
