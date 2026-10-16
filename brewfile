@@ -103,7 +103,7 @@ if OS.mac?
   tap "d12frosted/emacs-plus"
   tap "nikitabobko/tap"
 
-  brew "emacs-plus@30", args: ["with-native-comp"]
+  brew "emacs-plus@30"
 
   brew "container"
 
