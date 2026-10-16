@@ -2,8 +2,8 @@ apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
   name: dev
-servers: 1
-agents: 2
+servers: 3
+agents: 3
 image: rancher/k3s:v1.36.4-k3s1
 registries:
   config: |
@@ -35,6 +35,9 @@ options:
     disableLoadbalancer: false
   k3s:
     extraArgs:
+      - arg: --cluster-init
+        nodeFilters:
+          - server:0
       - arg: --disable=traefik
         nodeFilters:
           - server:*
@@ -50,3 +53,24 @@ options:
       - arg: --disable-kube-proxy
         nodeFilters:
           - server:*
+      - arg: --node-taint=node-role.kubernetes.io/control-plane:NoSchedule
+        nodeFilters:
+          - server:*
+      - arg: --node-label=topology.kubernetes.io/zone=local-a
+        nodeFilters:
+          - agent:0
+      - arg: --node-label=node.kubernetes.io/instance-type=local.large
+        nodeFilters:
+          - agent:0
+      - arg: --node-label=topology.kubernetes.io/zone=local-b
+        nodeFilters:
+          - agent:1
+      - arg: --node-label=node.kubernetes.io/instance-type=local.large
+        nodeFilters:
+          - agent:1
+      - arg: --node-label=topology.kubernetes.io/zone=local-c
+        nodeFilters:
+          - agent:2
+      - arg: --node-label=node.kubernetes.io/instance-type=local.large
+        nodeFilters:
+          - agent:2
