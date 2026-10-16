@@ -39,4 +39,4 @@ CORE_TOOLS: tuple[str, ...] = (
     "bat",
 )
 # ~/.config/<name> directories expected after chezmoi apply.
-LINKED_CONFIGS: tuple[str, ...] = ("nvim", "ghostty", "starship", "k9s")
+LINKED_CONFIGS: tuple[str, ...] = ("nvim", "ghostty", "starship", "k9s", "k3d")

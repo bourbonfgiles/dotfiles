@@ -66,6 +66,7 @@ brew "zsh"
 
 # Cloud CLIs & scripting
 brew "awscli"
+brew "awscli-local"
 brew "aws-vault"
 brew "azure-cli"
 brew "azure/kubelogin/kubelogin"
@@ -94,6 +95,7 @@ brew "cmctl"
 brew "cilium-cli"
 brew "eksctl"
 brew "kubeconform"
+brew "kwok"
 
 
 ################################################################################

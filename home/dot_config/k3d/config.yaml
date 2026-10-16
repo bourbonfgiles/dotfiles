@@ -1,0 +1,52 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: dev
+servers: 1
+agents: 2
+image: rancher/k3s:v1.36.4-k3s1
+registries:
+  config: |
+    mirrors:
+      "k3d-registry.localhost:5000":
+        endpoint:
+          - http://k3d-registry.localhost:5000
+ports:
+  - port: 25565:25565
+    nodeFilters:
+      - loadbalancer
+  - port: 30000:30000
+    nodeFilters:
+      - loadbalancer
+  - port: 30001:30001
+    nodeFilters:
+      - loadbalancer
+  - port: 30002:30002
+    nodeFilters:
+      - loadbalancer
+  - port: 30003:30003
+    nodeFilters:
+      - loadbalancer
+  - port: 30004:30004
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d:
+    disableLoadbalancer: false
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+      - arg: --disable=servicelb
+        nodeFilters:
+          - server:*
+      - arg: --flannel-backend=none
+        nodeFilters:
+          - server:*
+      - arg: --disable-network-policy
+        nodeFilters:
+          - server:*
+      - arg: --disable-kube-proxy
+        nodeFilters:
+          - server:*
