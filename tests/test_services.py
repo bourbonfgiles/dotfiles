@@ -158,16 +158,10 @@ class TestK8s:
         config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
         monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
         monkeypatch.setattr(platform, "is_mac", lambda: False)
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
         monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
         assert k8s.create_cluster("dev") is True
-        assert fake_runner.ran(
-            "k3d",
-            "registry",
-            "create",
-            "registry.localhost",
-            "--port",
-            "127.0.0.1:5050",
-        )
+        assert fake_runner.ran("k3d", "registry", "create", "registry.localhost")
         assert fake_runner.ran(
             "k3d", "cluster", "create", "dev", "--config", str(config)
         )
@@ -211,10 +205,7 @@ class TestK8s:
         assert k8s.create_cluster() is False
         assert not fake_runner.ran("k3d", "cluster", "create")
 
-    def test_registry_create_adds_podman_network_on_mac(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
-    ) -> None:
-        monkeypatch.setattr(platform, "is_mac", lambda: True)
+    def test_registry_create_uses_podman_network(self, fake_runner: FakeRunner) -> None:
         assert k8s._ensure_registry({}) is True
         assert fake_runner.ran(
             "k3d",
@@ -227,71 +218,21 @@ class TestK8s:
             "podman",
         )
 
-    def test_registry_create_omits_podman_network_on_linux(
+    def test_linux_points_docker_host_at_rootful_podman(
         self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
     ) -> None:
         monkeypatch.setattr(platform, "is_mac", lambda: False)
-        assert k8s._ensure_registry({}) is True
-        assert fake_runner.ran(
-            "k3d",
-            "registry",
-            "create",
-            "registry.localhost",
-            "--port",
-            "127.0.0.1:5050",
-        )
-        assert not fake_runner.ran(
-            "k3d",
-            "registry",
-            "create",
-            "registry.localhost",
-            "--port",
-            "127.0.0.1:5050",
-            "--default-network",
-            "podman",
-        )
-
-    def test_install_cilium_runs_helm_with_tracked_values(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_runner: FakeRunner,
-        tmp_path: Path,
-    ) -> None:
-        values = tmp_path / "k3d" / "cilium-values.yaml"
-        values.parent.mkdir(parents=True)
-        values.write_text("kubeProxyReplacement: true\n", encoding="utf-8")
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
-        monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "helm")
-        assert k8s.install_cilium() is True
-        assert fake_runner.ran(
-            "helm",
-            "install",
-            "cilium",
-            "cilium/cilium",
-            "--version",
-            "1.18.15",
-            "--namespace",
-            "kube-system",
-            "--values",
-            str(values),
-        )
-
-    def test_install_cilium_noop_without_values(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_runner: FakeRunner,
-        tmp_path: Path,
-    ) -> None:
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
-        monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "helm")
-        assert k8s.install_cilium() is False
-        assert not fake_runner.ran("helm", "install", "cilium")
-
-    def test_install_cilium_noop_without_helm(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
-    ) -> None:
-        monkeypatch.setattr(shell, "command_exists", lambda _n: False)
-        assert k8s.install_cilium() is False
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
+        assert k8s._docker_env() == {"DOCKER_HOST": "unix:///run/podman/podman.sock"}
         assert fake_runner.calls == []
+
+    def test_linux_enables_socket_for_wheel_when_unreachable(
+        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
+    ) -> None:
+        monkeypatch.setattr(platform, "is_mac", lambda: False)
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: False)
+        assert k8s._docker_env() is None
+        assert fake_runner.ran(
+            "sudo", "tee", "/etc/systemd/system/podman.socket.d/dotfiles-wheel.conf"
+        )
+        assert fake_runner.ran("sudo", "systemctl", "restart", "podman.socket")

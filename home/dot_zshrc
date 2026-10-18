@@ -120,13 +120,16 @@ fi
 export TENV_AUTO_INSTALL=true
 
 ################################################################################
-# Docker API socket for k3d/docker CLI (macOS Podman machine)
+# Docker API socket for k3d: rootful Podman (machine on macOS, system on Linux)
 ################################################################################
 if [[ "$OSTYPE" == darwin* ]] && command -v podman >/dev/null; then
   _podman_sock="$(podman machine inspect podman-machine-default 2>/dev/null \
     | sed -n 's/.*"Path" *: *"\(.*api.sock\)".*/\1/p' | head -1)"
   [[ -S "$_podman_sock" ]] && export DOCKER_HOST="unix://$_podman_sock"
   unset _podman_sock
+elif [[ -S /run/podman/podman.sock ]]; then
+  export DOCKER_HOST="unix:///run/podman/podman.sock"
+  alias kpodman="podman --url \$DOCKER_HOST"
 fi
 
 ################################################################################
