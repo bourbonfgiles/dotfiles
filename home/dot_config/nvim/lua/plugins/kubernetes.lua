@@ -7,7 +7,7 @@ return {
           settings = {
             yaml = {
               schemas = {
-                kubernetes = "*.yaml",
+                kubernetes = { "k8s/**/*.{yml,yaml}", "**/manifests/**/*.{yml,yaml}", "clusters/**/*.{yml,yaml}" },
                 ["http://json.schemastore.org/github-workflow"] = ".github/workflows/*",
                 ["http://json.schemastore.org/ansible-stable-2.9"] = "roles/tasks/*.{yml,yaml}",
                 ["http://json.schemastore.org/prettierrc"] = ".prettierrc.{yml,yaml}",

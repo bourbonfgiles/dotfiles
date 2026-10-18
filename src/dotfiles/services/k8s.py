@@ -1,9 +1,9 @@
 """Local Kubernetes via k3d on every target.
 
 k3d runs k3s nodes as containers through the Docker API, so one tool gives the
-same classic 3-node cluster (1 server + 2 agents) on macOS, Bazzite, and
-Silverblue. On Linux k3d talks to docker/podman directly; on macOS it talks to
-the Podman machine's Docker-compatible socket via DOCKER_HOST.
+same cluster (1 server + 3 agents) on macOS, Bazzite, and Silverblue. On Linux
+k3d talks to docker/podman directly; on macOS it talks to the Podman machine's
+Docker-compatible socket via DOCKER_HOST.
 
 The bootstrap step only verifies the runtime is ready; creating or destroying a
 cluster is explicit via create_cluster() / delete_cluster(), never automatic.
@@ -21,8 +21,8 @@ from ..utils.logging import get_logger
 
 logger = get_logger("k8s")
 
-# Node counts, versions, disabled components, and port maps live in the
-# chezmoi-managed config at ~/.config/k3d/config.yaml.
+# Node counts, versions, disabled components, port maps, and the local registry
+# all live in the chezmoi-managed config at ~/.config/k3d/config.yaml.
 CLUSTER_NAME = "dev"
 _PODMAN_MACHINE = "podman-machine-default"
 # applehv needs no extra binary (libkrun would require krunkit). Multi-node k3d
@@ -32,12 +32,6 @@ _PODMAN_PROVIDER = "applehv"
 _CREATE_TIMEOUT = "300s"
 # Holds the control plane, Cilium, and a JVM game server at once; 2 GB OOMs.
 _MACHINE_MEMORY_MB = 8192
-_REGISTRY_NAME = "k3d-registry.localhost"
-# 5000 is taken by macOS AirPlay Receiver, so publish the registry on 5050;
-# the config mirror still targets the container's internal 5000.
-_REGISTRY_HOST_PORT = "5050"
-# Podman's default bridge network is "podman", not the "bridge" k3d assumes.
-_PODMAN_NETWORK = "podman"
 
 
 def _machine_field(field: str) -> object | None:
@@ -176,31 +170,12 @@ def _config_file() -> Path:
     return config_home / "k3d" / "config.yaml"
 
 
-def _ensure_registry(env: dict[str, str]) -> bool:
-    """Ensure the shared local registry the cluster config mirrors exists."""
-    listed = shell.run(
-        ["k3d", "registry", "list", "--output", "json"],
-        check=False,
-        capture=True,
-        env=_run_env(env),
-    ).stdout
-    if _REGISTRY_NAME in listed or f"k3d-{_REGISTRY_NAME}" in listed:
-        return True
-    logger.info("Creating k3d registry %r…", _REGISTRY_NAME)
-    cmd = ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_HOST_PORT]
-    # macOS runs k3d against Podman, whose default network is "podman"; Linux
-    # (Bazzite/Fedora) uses Docker, where k3d's assumed "bridge" network exists.
-    if platform.is_mac():
-        cmd += ["--default-network", _PODMAN_NETWORK]
-    return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
-
-
 def create_cluster(name: str = CLUSTER_NAME) -> bool:
     """Create the k3d cluster from the tracked config; return True on success.
 
     The config pins the k3s version, disables Traefik, servicelb, Flannel, the
-    default network policy, and kube-proxy, and maps the host ports. A CNI is
-    expected to be installed afterwards (handled outside this step).
+    default network policy, and kube-proxy, maps the host ports, and creates the
+    local registry. A CNI is installed afterwards, outside this step.
     """
     if not shell.command_exists("k3d"):
         logger.warning("k3d not found; cannot create a cluster.")
@@ -212,9 +187,6 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
     config = _config_file()
     if not config.is_file():
         logger.warning("k3d config not found at %s; run chezmoi apply.", config)
-        return False
-    if not _ensure_registry(extra):
-        logger.warning("Could not ensure the local registry; aborting create.")
         return False
     logger.info("Creating k3d cluster %r from %s…", name, config)
     return (
@@ -265,9 +237,9 @@ def run(settings: Settings) -> None:
                 "run `podman machine start` before creating a cluster."
             )
             return
-        logger.info("k3d ready (via Podman). create_cluster() makes a 3-node cluster.")
+        logger.info("k3d ready (via Podman). create_cluster() makes the dev cluster.")
         return
-    logger.info("k3d ready. create_cluster() makes a 3-node cluster.")
+    logger.info("k3d ready. create_cluster() makes the dev cluster.")
 
 
 __all__ = ["create_cluster", "delete_cluster", "run", "CLUSTER_NAME"]

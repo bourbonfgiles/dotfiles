@@ -27,7 +27,15 @@ fi
 # Zsh completion system (must be before any compdef/completion usage)
 ################################################################################
 autoload -Uz compinit
-compinit -i
+# Cache the completion dump; rebuild it only once a day (-C skips the security
+# check on the cached dump, making subsequent shells start noticeably faster).
+_zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+mkdir -p "${_zcompdump:h}"
+if [[ -n "$_zcompdump"(#qN.mh+24) ]]; then
+  compinit -i -d "$_zcompdump"
+else
+  compinit -C -i -d "$_zcompdump"
+fi
 
 ################################################################################
 # Aliases

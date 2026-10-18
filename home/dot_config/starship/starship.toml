@@ -29,6 +29,7 @@ style = "bold blue"
 
 # Kubernetes configuration
 [kubernetes]
+disabled = false
 symbol = "☸️ "
 style = "bold blue"
 

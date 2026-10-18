@@ -2,20 +2,25 @@ apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
   name: dev
-servers: 3
+# One server keeps the control plane "invisible" like EKS; the three agents are
+# the only nodes workloads see. --cluster-init still gives this server etcd
+# (not SQLite), matching the datastore EKS runs.
+servers: 1
 agents: 3
+# Current k3s/EKS-valid minor. Bump as desired; this is a local cluster.
 image: rancher/k3s:v1.36.4-k3s1
 registries:
+  create:
+    name: k3d-registry.localhost
+    host: "0.0.0.0"
+    hostPort: "5050"
   config: |
     mirrors:
       "k3d-registry.localhost:5000":
         endpoint:
           - http://k3d-registry.localhost:5000
 ports:
-  - port: 25565:25565
-    nodeFilters:
-      - loadbalancer
-  - port: 30000:30000
+  - port: 25565:30000
     nodeFilters:
       - loadbalancer
   - port: 30001:30001
@@ -56,21 +61,24 @@ options:
       - arg: --node-taint=node-role.kubernetes.io/control-plane:NoSchedule
         nodeFilters:
           - server:*
-      - arg: --node-label=topology.kubernetes.io/zone=local-a
+      - arg: --node-label=topology.kubernetes.io/region=eu-west-2
+        nodeFilters:
+          - agent:*
+      - arg: --node-label=node.kubernetes.io/instance-type=m5.large
+        nodeFilters:
+          - agent:*
+      - arg: --node-label=eks.amazonaws.com/nodegroup=general
+        nodeFilters:
+          - agent:*
+      - arg: --node-label=eks.amazonaws.com/capacityType=ON_DEMAND
+        nodeFilters:
+          - agent:*
+      - arg: --node-label=topology.kubernetes.io/zone=eu-west-2a
         nodeFilters:
           - agent:0
-      - arg: --node-label=node.kubernetes.io/instance-type=local.large
-        nodeFilters:
-          - agent:0
-      - arg: --node-label=topology.kubernetes.io/zone=local-b
+      - arg: --node-label=topology.kubernetes.io/zone=eu-west-2b
         nodeFilters:
           - agent:1
-      - arg: --node-label=node.kubernetes.io/instance-type=local.large
-        nodeFilters:
-          - agent:1
-      - arg: --node-label=topology.kubernetes.io/zone=local-c
-        nodeFilters:
-          - agent:2
-      - arg: --node-label=node.kubernetes.io/instance-type=local.large
+      - arg: --node-label=topology.kubernetes.io/zone=eu-west-2c
         nodeFilters:
           - agent:2
