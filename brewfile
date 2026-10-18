@@ -61,6 +61,7 @@ brew "tlrc"
 brew "typescript"
 brew "yarn"
 brew "yazi"
+brew "yq"
 brew "zoxide"
 brew "zsh"
 
