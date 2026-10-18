@@ -43,6 +43,11 @@ _REGISTRY_PORT = "127.0.0.1:5050"
 # Podman's default bridge network is "podman", not the "bridge" k3d assumes on
 # Docker, so registry create must pass it explicitly.
 _PODMAN_NETWORK = "podman"
+# Created here rather than by k3d so the bridge name and subnet are stable: the
+# cluster's LoadBalancer pool and the host DNS route both depend on them.
+_CLUSTER_NETWORK = "k3d-dev"
+_CLUSTER_SUBNET = "10.89.0.0/24"
+_CLUSTER_BRIDGE = "k3d0"
 _LINUX_SOCKET = "/run/podman/podman.sock"
 _SOCKET_DROPIN_DIR = "/etc/systemd/system/podman.socket.d"
 _SOCKET_DROPIN = "dotfiles-wheel.conf"
@@ -51,6 +56,37 @@ _SOCKET_DROPIN_BODY = """\
 SocketGroup=wheel
 SocketMode=0660
 ExecStartPre=/usr/bin/install -d -m 0750 -o root -g wheel /run/podman
+"""
+# Sends *.kube.internal lookups to the cluster's DNS server (kube_local's BIND
+# LoadBalancer) whenever the cluster bridge exists. The link opts out of the
+# global DNS-over-TLS and DNSSEC settings, which a local zone can't satisfy.
+_KUBE_DNS_DOMAIN = "kube.internal"
+_KUBE_DNS_SERVER = "10.89.0.250"
+_KUBE_DNS_UNIT = "dotfiles-kube-dns.service"
+_KUBE_DNS_UNIT_BODY = f"""\
+[Unit]
+Description=Resolve {_KUBE_DNS_DOMAIN} via the local k3d cluster
+BindsTo=sys-subsystem-net-devices-{_CLUSTER_BRIDGE}.device
+After=sys-subsystem-net-devices-{_CLUSTER_BRIDGE}.device systemd-resolved.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/resolvectl dns {_CLUSTER_BRIDGE} {_KUBE_DNS_SERVER}
+ExecStart=/usr/bin/resolvectl domain {_CLUSTER_BRIDGE} ~{_KUBE_DNS_DOMAIN}
+ExecStart=/usr/bin/resolvectl dnsovertls {_CLUSTER_BRIDGE} no
+ExecStart=/usr/bin/resolvectl dnssec {_CLUSTER_BRIDGE} no
+
+[Install]
+WantedBy=sys-subsystem-net-devices-{_CLUSTER_BRIDGE}.device
+"""
+# Podman's journald log reader intermittently fails while k3d waits for a node's
+# "k3s is up" line. Plain log files avoid it; capped so k3s can't fill the disk.
+_PODMAN_LOGGING_CONF = "/etc/containers/containers.conf.d/dotfiles-k3d.conf"
+_PODMAN_LOGGING_BODY = """\
+[containers]
+log_driver = "k8s-file"
+log_size_max = 52428800
 """
 
 
@@ -184,6 +220,36 @@ def _ensure_linux_socket() -> bool:
     return _linux_socket_ready()
 
 
+def _sudo_install(path: str, body: str) -> bool:
+    """Write a root-owned file unless it already matches; return True if written."""
+    try:
+        if Path(path).read_text(encoding="utf-8") == body:
+            return False
+    except OSError:
+        pass
+    shell.run(
+        ["sudo", "install", "-d", "-m", "0755", str(Path(path).parent)], check=False
+    )
+    system.sudo_write(path, body)
+    return True
+
+
+def _ensure_host_dns() -> None:
+    """Install the systemd unit that routes kube.internal to the cluster."""
+    unit = f"/etc/systemd/system/{_KUBE_DNS_UNIT}"
+    if not _sudo_install(unit, _KUBE_DNS_UNIT_BODY):
+        return
+    logger.info("Routed *.%s to the local cluster.", _KUBE_DNS_DOMAIN)
+    shell.run(["sudo", "systemctl", "daemon-reload"], check=False)
+    shell.run(["sudo", "systemctl", "enable", "--now", _KUBE_DNS_UNIT], check=False)
+
+
+def _ensure_podman_logging() -> None:
+    """Switch rootful Podman to file logging (applies to new containers)."""
+    if _sudo_install(_PODMAN_LOGGING_CONF, _PODMAN_LOGGING_BODY):
+        logger.info("Rootful Podman now logs to files; recreate the cluster to use it.")
+
+
 def _docker_env() -> dict[str, str] | None:
     """Env that points k3d at a rootful Podman Docker-API socket.
 
@@ -214,6 +280,41 @@ def _config_file() -> Path:
     """Path to the chezmoi-managed k3d cluster config."""
     config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
     return config_home / "k3d" / "config.yaml"
+
+
+def _ensure_network(env: dict[str, str]) -> bool:
+    """Ensure the cluster network exists with its fixed bridge and subnet."""
+    podman = ["podman", "--url", env["DOCKER_HOST"], "network"]
+    exists = shell.run([*podman, "exists", _CLUSTER_NETWORK], check=False, capture=True)
+    if exists.returncode == 0:
+        bridge = shell.run(
+            [*podman, "inspect", _CLUSTER_NETWORK, "--format", "{{.NetworkInterface}}"],
+            check=False,
+            capture=True,
+        ).stdout.strip()
+        if bridge and bridge != _CLUSTER_BRIDGE:
+            logger.warning(
+                "Network %r uses bridge %r, not %r, so *.%s won't resolve on the "
+                "host. Delete the cluster, then `podman network rm %s` (disconnect "
+                "the registry first) and create again.",
+                _CLUSTER_NETWORK,
+                bridge,
+                _CLUSTER_BRIDGE,
+                _KUBE_DNS_DOMAIN,
+                _CLUSTER_NETWORK,
+            )
+        return True
+    logger.info("Creating cluster network %r (%s)…", _CLUSTER_NETWORK, _CLUSTER_SUBNET)
+    cmd = [
+        *podman,
+        "create",
+        "--subnet",
+        _CLUSTER_SUBNET,
+        "--interface-name",
+        _CLUSTER_BRIDGE,
+        _CLUSTER_NETWORK,
+    ]
+    return shell.run(cmd, check=False).returncode == 0
 
 
 def _ensure_registry(env: dict[str, str]) -> bool:
@@ -263,6 +364,9 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
     config = _config_file()
     if not config.is_file():
         logger.warning("k3d config not found at %s; run chezmoi apply.", config)
+        return False
+    if not _ensure_network(extra):
+        logger.warning("Could not ensure the cluster network; aborting.")
         return False
     if not _ensure_registry(extra):
         logger.warning("Could not ensure the persistent registry; aborting.")
@@ -318,6 +422,10 @@ def run(settings: Settings) -> None:
         )
         logger.warning("k3d present but Podman not ready; %s.", hint)
         return
+    if platform.is_linux():
+        _ensure_podman_logging()
+        if shell.command_exists("resolvectl"):
+            _ensure_host_dns()
     logger.info("k3d ready (via Podman). create_cluster() makes the dev cluster.")
 
 

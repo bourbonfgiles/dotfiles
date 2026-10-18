@@ -225,6 +225,53 @@ class TestK8s:
         assert k8s.create_cluster() is False
         assert not fake_runner.ran("k3d", "cluster", "create")
 
+    def test_network_created_with_fixed_subnet_and_bridge(
+        self, fake_runner: FakeRunner
+    ) -> None:
+        sock = {"DOCKER_HOST": "unix:///run/podman/podman.sock"}
+        podman = ["podman", "--url", "unix:///run/podman/podman.sock", "network"]
+        fake_runner.script([*podman, "exists"], returncode=1)
+        assert k8s._ensure_network(sock) is True
+        assert fake_runner.ran(
+            *podman,
+            "create",
+            "--subnet",
+            "10.89.0.0/24",
+            "--interface-name",
+            "k3d0",
+            "k3d-dev",
+        )
+
+    def test_existing_network_is_reused(self, fake_runner: FakeRunner) -> None:
+        assert k8s._ensure_network({"DOCKER_HOST": "unix:///s"}) is True
+        assert not fake_runner.ran("podman", "--url", "unix:///s", "network", "create")
+
+    def test_host_dns_unit_routes_domain_on_cluster_bridge(
+        self, fake_runner: FakeRunner
+    ) -> None:
+        body = k8s._KUBE_DNS_UNIT_BODY
+        assert "BindsTo=sys-subsystem-net-devices-k3d0.device" in body
+        assert "resolvectl dns k3d0 10.89.0.250" in body
+        assert "resolvectl domain k3d0 ~kube.internal" in body
+        assert "resolvectl dnsovertls k3d0 no" in body
+        k8s._ensure_host_dns()
+        assert fake_runner.ran(
+            "sudo", "tee", "/etc/systemd/system/dotfiles-kube-dns.service"
+        )
+        assert fake_runner.ran(
+            "sudo", "systemctl", "enable", "--now", "dotfiles-kube-dns.service"
+        )
+
+    def test_podman_logging_drop_in_uses_capped_files(
+        self, fake_runner: FakeRunner
+    ) -> None:
+        assert 'log_driver = "k8s-file"' in k8s._PODMAN_LOGGING_BODY
+        assert "log_size_max" in k8s._PODMAN_LOGGING_BODY
+        k8s._ensure_podman_logging()
+        assert fake_runner.ran(
+            "sudo", "tee", "/etc/containers/containers.conf.d/dotfiles-k3d.conf"
+        )
+
     def test_registry_create_uses_podman_network(self, fake_runner: FakeRunner) -> None:
         assert k8s._ensure_registry({}) is True
         assert fake_runner.ran(
