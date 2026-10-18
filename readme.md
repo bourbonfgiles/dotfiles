@@ -16,6 +16,7 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
 - **Containers** → Apple `container` on macOS; the OS's own `podman` on Linux.
 - **Local Kubernetes** → one 4-node (1 server + 3 agents) story everywhere via `k3d`: always on rootful Podman (Cilium needs it for BPF). On Linux the `k8s` step enables the system `podman.socket` for `wheel` (one sudo prompt); on macOS it uses a rootful `applehv` Podman machine (set up automatically). Use `kpodman ps` on Linux to see the cluster's containers; plain `podman` is rootless. The `k8s` step only prepares the runtime; create a cluster on demand via `k8s.create_cluster()`, then hand off to the `kube_local` repo to install networking. The cluster runs on a fixed Podman network (`k3d-dev`, bridge `k3d0`, `10.89.0.0/24`); on Linux a systemd unit sends `*.kube.internal` lookups to the cluster's DNS server once kube_local installs it.
+- **BPF tracing** → `bpftrace` and the BCC tools layered with `rpm-ostree` on Linux (for the BPF Performance Tools book); not available on macOS.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`; Hammerspoon on macOS.
 
 Flatpaks install via a dedicated step (not `brew bundle`). Flatpak **overrides** are applied by chezmoi under `~/.local/share/flatpak/overrides/`.
