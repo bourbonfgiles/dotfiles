@@ -101,6 +101,8 @@ fi
 # eza Theme Path (cross‑platform)
 ################################################################################
 export EZA_CONFIG_DIR="$HOME/.config/eza"
+# k9s otherwise uses ~/Library/Application Support/k9s on macOS
+export K9S_CONFIG_DIR="$HOME/.config/k9s"
 
 ################################################################################
 # Editor
