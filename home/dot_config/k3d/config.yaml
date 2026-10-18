@@ -12,6 +12,9 @@ agents: 3
 image: rancher/k3s:v1.36.4-k3s1
 kubeAPI:
   hostIP: "127.0.0.1"
+# Pre-created by k8s.py with a fixed subnet and bridge name; k3d leaves it in
+# place on cluster delete.
+network: k3d-dev
 # Persistent standalone registry (created by k8s.py, survives cluster deletes so
 # the image cache is kept). k3d prepends "k3d-" to the name below, so the
 # node-resolvable host is k3d-registry.localhost:5000, matching the mirror.
