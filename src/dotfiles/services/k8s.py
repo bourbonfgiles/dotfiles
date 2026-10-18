@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 
 from ..config.settings import Settings
@@ -30,7 +31,8 @@ _PODMAN_MACHINE = "podman-machine-default"
 _PODMAN_PROVIDER = "applehv"
 # First run pulls the k3s image through Podman, which outlasts k3d's default.
 _CREATE_TIMEOUT = "300s"
-_CREATE_ATTEMPTS = 2
+_CREATE_ATTEMPTS = 3
+_CREATE_RETRY_PAUSE_S = 5
 # Holds the control plane, Cilium, and a JVM game server at once; 2 GB OOMs.
 _MACHINE_MEMORY_MB = 8192
 # k3d prepends "k3d-" to the registry name, so this resolves as
@@ -382,13 +384,14 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
         _CREATE_TIMEOUT,
     ]
     # Podman's journald log reader intermittently fails while k3d waits for the
-    # server; k3d rolls back cleanly, so one retry is enough.
+    # server (see _PODMAN_LOGGING_BODY for the fix); k3d rolls back cleanly.
     for attempt in range(1, _CREATE_ATTEMPTS + 1):
         logger.info("Creating k3d cluster %r from %s…", name, config)
         if shell.run(cmd, check=False, env=_run_env(extra)).returncode == 0:
             return True
         if attempt < _CREATE_ATTEMPTS:
-            logger.warning("k3d cluster create failed; retrying once.")
+            logger.warning("k3d cluster create failed; retrying.")
+            time.sleep(_CREATE_RETRY_PAUSE_S)
     return False
 
 

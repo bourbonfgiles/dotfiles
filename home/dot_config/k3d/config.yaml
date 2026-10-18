@@ -45,6 +45,17 @@ ports:
 # No bpffs volume: Cilium auto-mounts /sys/fs/bpf inside each agent, and eBPF
 # objects are kernel-global so host bpftool sees them regardless. A single
 # host bpffs shared across all node containers would collide pinned maps.
+# Pods inherit kubelet's resolv.conf. The node's own copy carries the host's LAN
+# search domains, so every external lookup first tried e.g. "<name>.fritz.box"
+# and could stall for seconds. This one points at Podman's DNS with no search.
+files:
+  - description: Pod DNS without LAN search domains
+    source: |
+      nameserver 10.89.0.1
+    destination: /etc/rancher/k3s/resolv.conf
+    nodeFilters:
+      - server:*
+      - agent:*
 options:
   k3d:
     disableLoadbalancer: false
@@ -68,6 +79,10 @@ options:
       - arg: --disable-kube-proxy
         nodeFilters:
           - server:*
+      - arg: --resolv-conf=/etc/rancher/k3s/resolv.conf
+        nodeFilters:
+          - server:*
+          - agent:*
       - arg: --node-taint=node-role.kubernetes.io/control-plane:NoSchedule
         nodeFilters:
           - server:*
