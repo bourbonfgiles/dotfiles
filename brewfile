@@ -25,6 +25,7 @@ tap "Valkyrie00/homebrew-bbrew"
 # Core
 brew "argocd"
 brew "bat"
+brew "bottom"
 brew "bbrew"
 brew "carapace"
 brew "cloudflare/cloudflare/cf-terraforming"
