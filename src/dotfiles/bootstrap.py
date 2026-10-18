@@ -9,6 +9,7 @@ from .config import runtime
 from .config.settings import Settings
 from .services import (
     albert,
+    bpf,
     checks,
     chezmoi_apply,
     dns,
@@ -52,6 +53,7 @@ STEPS: tuple[Step, ...] = (
     Step("albert", albert.run),
     Step("gaming", gaming.run),
     Step("k8s", k8s.run),
+    Step("bpf", bpf.run),
     Step("shell_default", shell_default.run),
     Step("dns", dns.run),
     Step("gnome", gnome.run),

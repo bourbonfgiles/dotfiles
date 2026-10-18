@@ -7,9 +7,10 @@ from pathlib import Path
 import pytest
 
 from dotfiles.config.settings import Settings
-from dotfiles.services import chezmoi_apply, flatpak, homebrew, k8s
+from dotfiles.services import bpf, chezmoi_apply, flatpak, homebrew, k8s
 from dotfiles.utils import platform, shell
 from dotfiles.utils.exceptions import StepError
+from dotfiles.utils.platform import OSKind
 from tests.conftest import FakeRunner
 
 
@@ -304,3 +305,29 @@ class TestK8s:
             "sudo", "tee", "/etc/systemd/system/podman.socket.d/dotfiles-wheel.conf"
         )
         assert fake_runner.ran("sudo", "systemctl", "restart", "podman.socket")
+
+
+class TestBpf:
+    def test_noop_on_mac(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        settings: Settings,
+    ) -> None:
+        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.MAC)
+        bpf.run(settings)
+        assert fake_runner.calls == []
+
+    def test_layers_both_packages_on_atomic_fedora(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        settings: Settings,
+    ) -> None:
+        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.BAZZITE)
+        fake_runner.script(["rpm", "-q"], returncode=1)
+        bpf.run(settings)
+        for package in ("bpftrace", "bcc-tools"):
+            assert fake_runner.ran(
+                "sudo", "rpm-ostree", "install", "--idempotent", package
+            )
