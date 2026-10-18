@@ -1,4 +1,4 @@
-"""Sync the chezmoi-managed LazyVim config; never clobber it; link Neovide."""
+"""Install the chezmoi-managed LazyVim plugins at their locked versions; link Neovide."""
 
 from __future__ import annotations
 
@@ -46,8 +46,8 @@ def run(settings: Settings) -> None:
     if not repo_nvim.is_dir():
         logger.warning("repo nvim source missing: %s", repo_nvim)
     elif shell.command_exists("nvim"):
-        logger.info("Syncing Lazy plugins (headless)…")
-        shell.run(["nvim", "--headless", "+Lazy! sync", "+qa"], check=False)
+        logger.info("Restoring Lazy plugins to lazy-lock.json (headless)…")
+        shell.run(["nvim", "--headless", "+Lazy! restore", "+qa"], check=False)
     _link_neovide(settings)
 
 
