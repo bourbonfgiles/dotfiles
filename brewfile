@@ -48,7 +48,6 @@ brew "lazygit"
 brew "lua"
 brew "neovim"
 brew "node"
-brew "podman"
 brew "postgresql"
 brew "pre-commit"
 brew "ripgrep"
@@ -61,6 +60,7 @@ brew "tlrc"
 brew "typescript"
 brew "yarn"
 brew "yazi"
+brew "yq"
 brew "zoxide"
 brew "zsh"
 
@@ -109,6 +109,7 @@ if OS.mac?
 
   brew "container"
   brew "k3d"
+  brew "podman"
 
   # Fonts
   cask "font-fira-code-nerd-font"
@@ -139,7 +140,6 @@ end
 # 3) Linux only  (Bazzite + Silverblue)
 ################################################################################
 if OS.linux?
-  brew "docker"
   brew "emacs"
   brew "k3d"
   brew "wl-clipboard"

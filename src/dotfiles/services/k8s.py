@@ -1,9 +1,9 @@
 """Local Kubernetes via k3d on every target.
 
 k3d runs k3s nodes as containers through the Docker API, so one tool gives the
-same classic 3-node cluster (1 server + 2 agents) on macOS, Bazzite, and
-Silverblue. On Linux k3d talks to docker/podman directly; on macOS it talks to
-the Podman machine's Docker-compatible socket via DOCKER_HOST.
+same cluster (1 server + 3 agents) on macOS, Bazzite, and Silverblue. The
+runtime is rootful Podman everywhere, since eBPF CNIs need to load programs:
+the system podman.socket on Linux, the Podman machine on macOS.
 
 The bootstrap step only verifies the runtime is ready; creating or destroying a
 cluster is explicit via create_cluster() / delete_cluster(), never automatic.
@@ -16,13 +16,13 @@ import os
 from pathlib import Path
 
 from ..config.settings import Settings
-from ..utils import platform, shell
+from ..utils import platform, shell, system
 from ..utils.logging import get_logger
 
 logger = get_logger("k8s")
 
-# Node counts, versions, disabled components, and port maps live in the
-# chezmoi-managed config at ~/.config/k3d/config.yaml.
+# Node counts, versions, disabled components, port maps, and the local registry
+# all live in the chezmoi-managed config at ~/.config/k3d/config.yaml.
 CLUSTER_NAME = "dev"
 _PODMAN_MACHINE = "podman-machine-default"
 # applehv needs no extra binary (libkrun would require krunkit). Multi-node k3d
@@ -32,12 +32,25 @@ _PODMAN_PROVIDER = "applehv"
 _CREATE_TIMEOUT = "300s"
 # Holds the control plane, Cilium, and a JVM game server at once; 2 GB OOMs.
 _MACHINE_MEMORY_MB = 8192
-_REGISTRY_NAME = "k3d-registry.localhost"
-# 5000 is taken by macOS AirPlay Receiver, so publish the registry on 5050;
-# the config mirror still targets the container's internal 5000.
-_REGISTRY_HOST_PORT = "5050"
-# Podman's default bridge network is "podman", not the "bridge" k3d assumes.
+# k3d prepends "k3d-" to the registry name, so this resolves as
+# "k3d-registry.localhost" on the cluster network (what the config mirror uses).
+_REGISTRY_NAME = "registry.localhost"
+_REGISTRY_NODE_HOST = "k3d-registry.localhost"
+# Bind the host-published port to loopback only; a dev registry has no reason
+# to be reachable from the LAN. 5000 clashes with macOS AirPlay, so use 5050.
+_REGISTRY_PORT = "127.0.0.1:5050"
+# Podman's default bridge network is "podman", not the "bridge" k3d assumes on
+# Docker, so registry create must pass it explicitly.
 _PODMAN_NETWORK = "podman"
+_LINUX_SOCKET = "/run/podman/podman.sock"
+_SOCKET_DROPIN_DIR = "/etc/systemd/system/podman.socket.d"
+_SOCKET_DROPIN = "dotfiles-wheel.conf"
+_SOCKET_DROPIN_BODY = """\
+[Socket]
+SocketGroup=wheel
+SocketMode=0660
+ExecStartPre=/usr/bin/install -d -m 0750 -o root -g wheel /run/podman
+"""
 
 
 def _machine_field(field: str) -> object | None:
@@ -145,16 +158,42 @@ def _ensure_podman_machine() -> bool:
     return _ensure_resources()
 
 
-def _docker_env() -> dict[str, str] | None:
-    """Env that points k3d at a Docker API.
+def _linux_socket_ready() -> bool:
+    try:
+        return Path(_LINUX_SOCKET).is_socket() and os.access(
+            _LINUX_SOCKET, os.R_OK | os.W_OK
+        )
+    except OSError:
+        return False
 
-    macOS: start the Podman machine and set DOCKER_HOST to its socket.
-    Linux: None — k3d uses the ambient docker/podman socket as-is.
-    Returns an empty dict on Linux-with-nothing-extra, or None if the macOS
-    runtime could not be made ready.
+
+def _ensure_linux_socket() -> bool:
+    """Enable the rootful podman.socket and let wheel use it without sudo.
+
+    Socket access is root-equivalent, like the docker group would be.
+    """
+    if _linux_socket_ready():
+        return True
+    logger.info("Enabling rootful podman.socket for wheel (sudo)…")
+    shell.run(["sudo", "install", "-d", "-m", "0755", _SOCKET_DROPIN_DIR], check=False)
+    system.sudo_write(f"{_SOCKET_DROPIN_DIR}/{_SOCKET_DROPIN}", _SOCKET_DROPIN_BODY)
+    shell.run(["sudo", "systemctl", "daemon-reload"], check=False)
+    shell.run(["sudo", "systemctl", "enable", "podman.socket"], check=False)
+    shell.run(["sudo", "systemctl", "restart", "podman.socket"], check=False)
+    return _linux_socket_ready()
+
+
+def _docker_env() -> dict[str, str] | None:
+    """Env that points k3d at a rootful Podman Docker-API socket.
+
+    macOS: start the Podman machine and use its socket.
+    Linux: enable the system podman.socket and use it.
+    Returns None if the runtime could not be made ready.
     """
     if not platform.is_mac():
-        return {}
+        if not _ensure_linux_socket():
+            return None
+        return {"DOCKER_HOST": f"unix://{_LINUX_SOCKET}"}
     if not shell.command_exists("podman") or not _ensure_podman_machine():
         return None
     sock = _podman_socket()
@@ -177,21 +216,32 @@ def _config_file() -> Path:
 
 
 def _ensure_registry(env: dict[str, str]) -> bool:
-    """Ensure the shared local registry the cluster config mirrors exists."""
+    """Ensure the persistent standalone registry the config references exists.
+
+    The config uses registries.use (not create), so the registry must outlive
+    any single cluster — this keeps the image cache across rebuilds. k3d
+    prepends "k3d-" to the name, so "registry.localhost" resolves as
+    "k3d-registry.localhost:5000" from the nodes, matching the mirror.
+    """
     listed = shell.run(
         ["k3d", "registry", "list", "--output", "json"],
         check=False,
         capture=True,
         env=_run_env(env),
     ).stdout
-    if _REGISTRY_NAME in listed or f"k3d-{_REGISTRY_NAME}" in listed:
+    if _REGISTRY_NODE_HOST in listed:
         return True
-    logger.info("Creating k3d registry %r…", _REGISTRY_NAME)
-    cmd = ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_HOST_PORT]
-    # macOS runs k3d against Podman, whose default network is "podman"; Linux
-    # (Bazzite/Fedora) uses Docker, where k3d's assumed "bridge" network exists.
-    if platform.is_mac():
-        cmd += ["--default-network", _PODMAN_NETWORK]
+    logger.info("Creating persistent registry %r…", _REGISTRY_NODE_HOST)
+    cmd = [
+        "k3d",
+        "registry",
+        "create",
+        _REGISTRY_NAME,
+        "--port",
+        _REGISTRY_PORT,
+        "--default-network",
+        _PODMAN_NETWORK,
+    ]
     return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
 
 
@@ -199,8 +249,8 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
     """Create the k3d cluster from the tracked config; return True on success.
 
     The config pins the k3s version, disables Traefik, servicelb, Flannel, the
-    default network policy, and kube-proxy, and maps the host ports. A CNI is
-    expected to be installed afterwards (handled outside this step).
+    default network policy, and kube-proxy, maps the host ports, and attaches
+    the persistent registry. A CNI is installed afterwards, outside this step.
     """
     if not shell.command_exists("k3d"):
         logger.warning("k3d not found; cannot create a cluster.")
@@ -214,7 +264,7 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
         logger.warning("k3d config not found at %s; run chezmoi apply.", config)
         return False
     if not _ensure_registry(extra):
-        logger.warning("Could not ensure the local registry; aborting create.")
+        logger.warning("Could not ensure the persistent registry; aborting.")
         return False
     logger.info("Creating k3d cluster %r from %s…", name, config)
     return (
@@ -258,16 +308,15 @@ def run(settings: Settings) -> None:
     if not shell.command_exists("k3d"):
         logger.warning("k3d not found; local Kubernetes unavailable.")
         return
-    if platform.is_mac():
-        if _docker_env() is None:
-            logger.warning(
-                "k3d present but Podman machine not ready; "
-                "run `podman machine start` before creating a cluster."
-            )
-            return
-        logger.info("k3d ready (via Podman). create_cluster() makes a 3-node cluster.")
+    if _docker_env() is None:
+        hint = (
+            "run `podman machine start`"
+            if platform.is_mac()
+            else f"check `systemctl status podman.socket` and {_LINUX_SOCKET}"
+        )
+        logger.warning("k3d present but Podman not ready; %s.", hint)
         return
-    logger.info("k3d ready. create_cluster() makes a 3-node cluster.")
+    logger.info("k3d ready (via Podman). create_cluster() makes the dev cluster.")
 
 
 __all__ = ["create_cluster", "delete_cluster", "run", "CLUSTER_NAME"]

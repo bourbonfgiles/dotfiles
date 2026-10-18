@@ -58,9 +58,11 @@ class TestDryRunner:
     def test_read_only_probe_still_runs(self) -> None:
         runner = shell.DryRunner()
         # `rpm -q` is a pure query; under dry-run it must still execute so
-        # detection logic stays correct. On a Mac rpm is absent -> ENOENT.
-        with pytest.raises(CommandError):
-            runner.run(
+        # detection logic stays correct. A skipped command returns 0, so either
+        # outcome proves it ran: on a Mac rpm is absent -> ENOENT; on Fedora it
+        # exists and reports the package as not installed (non-zero).
+        try:
+            result = runner.run(
                 ["rpm", "-q", "something"],
                 check=False,
                 capture=True,
@@ -68,6 +70,9 @@ class TestDryRunner:
                 env=None,
                 cwd=None,
             )
+        except CommandError:
+            return
+        assert result.returncode != 0
 
     def test_git_config_read_vs_write(self) -> None:
         # read form: `git config key` (capture, no stdin) -> read-only

@@ -14,8 +14,8 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Ghostty** → Homebrew cask on macOS; `scottames/ghostty` COPR layered with `rpm-ostree` on atomic Fedora.
 - **Warp** → Homebrew cask on macOS; official Warp RPM repo layered with `rpm-ostree` on atomic Fedora.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
-- **Containers** → Apple `container` on macOS; `docker` on Linux.
-- **Local Kubernetes** → one 3-node (1 server + 2 agents) story everywhere via `k3d`: on Linux it uses docker/podman directly; on macOS it runs against a rootful `applehv` Podman machine (set up automatically). The `k8s` step only checks the runtime; create a cluster on demand via `k8s.create_cluster()`.
+- **Containers** → Apple `container` on macOS; the OS's own `podman` on Linux.
+- **Local Kubernetes** → one 4-node (1 server + 3 agents) story everywhere via `k3d`: always on rootful Podman (Cilium needs it for BPF). On Linux the `k8s` step enables the system `podman.socket` for `wheel` (one sudo prompt); on macOS it uses a rootful `applehv` Podman machine (set up automatically). Use `kpodman ps` on Linux to see the cluster's containers; plain `podman` is rootless. The `k8s` step only prepares the runtime; create a cluster on demand via `k8s.create_cluster()`, then hand off to the `kube_local` repo to install networking.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`; Hammerspoon on macOS.
 
 Flatpaks install via a dedicated step (not `brew bundle`). Flatpak **overrides** are applied by chezmoi under `~/.local/share/flatpak/overrides/`.
