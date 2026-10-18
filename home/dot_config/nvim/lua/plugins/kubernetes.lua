@@ -6,8 +6,16 @@ return {
         yamlls = {
           settings = {
             yaml = {
+              -- Pin the core Kubernetes schema version; CRDs (Flux, Cilium, ...)
+              -- are resolved automatically by apiVersion/kind from the datreeio
+              -- catalog via kubernetesCRDStore (enabled by default, needs
+              -- yaml-language-server >= 1.19). No per-CRD glob mappings: those
+              -- overlapped other schemas (e.g. release.yml) and misapplied the
+              -- Kustomization schema to everything under clusters/.
+              kubernetesVersion = "1.36.1",
+              kubernetesCRDStore = { enable = true },
               schemas = {
-                kubernetes = "*.yaml",
+                kubernetes = { "k8s/**/*.{yml,yaml}", "**/manifests/**/*.{yml,yaml}", "clusters/**/*.{yml,yaml}", "infrastructure/**/*.{yml,yaml}", "apps/**/*.{yml,yaml}" },
                 ["http://json.schemastore.org/github-workflow"] = ".github/workflows/*",
                 ["http://json.schemastore.org/ansible-stable-2.9"] = "roles/tasks/*.{yml,yaml}",
                 ["http://json.schemastore.org/prettierrc"] = ".prettierrc.{yml,yaml}",

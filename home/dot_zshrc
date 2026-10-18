@@ -27,7 +27,36 @@ fi
 # Zsh completion system (must be before any compdef/completion usage)
 ################################################################################
 autoload -Uz compinit
-compinit -i
+
+# Cache gh / kubectl / helm completions to a dir on $fpath, regenerating a file
+# only when its binary is newer. compinit then loads them from disk, so no
+# completion subprocess spawns per shell. Must run before compinit.
+_zcompcache="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/completions"
+mkdir -p "$_zcompcache"
+fpath=("$_zcompcache" $fpath)
+_cache_completion() {
+  local tool="$1" file="$_zcompcache/_$1"
+  command -v "$tool" >/dev/null || return
+  if [[ ! -f "$file" || "$(command -v "$tool")" -nt "$file" ]]; then
+    case "$tool" in
+      gh) gh completion -s zsh >"$file" ;;
+      *)  "$tool" completion zsh >"$file" ;;
+    esac
+  fi
+}
+_cache_completion gh
+_cache_completion kubectl
+_cache_completion helm
+
+# Cache the completion dump; rebuild it only once a day (-C skips the security
+# check on the cached dump, making subsequent shells start noticeably faster).
+_zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+mkdir -p "${_zcompdump:h}"
+if [[ -n "$_zcompdump"(#qN.mh+24) ]]; then
+  compinit -i -d "$_zcompdump"
+else
+  compinit -C -i -d "$_zcompdump"
+fi
 
 ################################################################################
 # Aliases
@@ -70,19 +99,6 @@ if command -v brew >/dev/null; then
 fi
 
 ################################################################################
-# gh / kubectl / helm completions
-################################################################################
-if command -v gh >/dev/null; then
-  eval "$(gh completion -s zsh)"
-fi
-if command -v kubectl >/dev/null; then
-  source <(kubectl completion zsh)
-fi
-if command -v helm >/dev/null; then
-  source <(helm completion zsh)
-fi
-
-################################################################################
 # eza Theme Path (cross‑platform)
 ################################################################################
 export EZA_CONFIG_DIR="$HOME/.config/eza"
@@ -104,13 +120,16 @@ fi
 export TENV_AUTO_INSTALL=true
 
 ################################################################################
-# Docker API socket for k3d/docker CLI (macOS Podman machine)
+# Docker API socket for k3d: rootful Podman (machine on macOS, system on Linux)
 ################################################################################
 if [[ "$OSTYPE" == darwin* ]] && command -v podman >/dev/null; then
   _podman_sock="$(podman machine inspect podman-machine-default 2>/dev/null \
     | sed -n 's/.*"Path" *: *"\(.*api.sock\)".*/\1/p' | head -1)"
   [[ -S "$_podman_sock" ]] && export DOCKER_HOST="unix://$_podman_sock"
   unset _podman_sock
+elif [[ -S /run/podman/podman.sock ]]; then
+  export DOCKER_HOST="unix:///run/podman/podman.sock"
+  alias kpodman="podman --url \$DOCKER_HOST"
 fi
 
 ################################################################################
