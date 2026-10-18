@@ -31,6 +31,8 @@ require("lazy").setup({
     -- version = "*", -- try installing the latest stable version for plugins that support semver
   },
   install = { colorscheme = { "habamax" } },
+  -- No plugin here needs luarocks, and its Lua build fails without readline headers.
+  rocks = { enabled = false },
   checker = {
     enabled = true, -- check for plugin updates periodically
     notify = false, -- notify on update

@@ -14,7 +14,7 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Ghostty** → Homebrew cask on macOS; `scottames/ghostty` COPR layered with `rpm-ostree` on atomic Fedora.
 - **Warp** → Homebrew cask on macOS; official Warp RPM repo layered with `rpm-ostree` on atomic Fedora.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
-- **Containers** → Apple `container` on macOS; the OS's own `podman` on Linux.
+- **Containers** → Apple `container` and brew Podman on macOS; the OS's own `podman` on Linux. k3d uses rootful Podman on both.
 - **Local Kubernetes** → a 4-node k3d cluster on rootful Podman, empty until the `kube_local` repo bootstraps it. See [kubernetes.md](kubernetes.md).
 - **BPF tracing** → `bpftrace`, the BCC tools, `bpftool` and `perf` layered with `rpm-ostree` on Linux (for the BPF Performance Tools book); not available on macOS.
 - **kubectl plugins** → the `krew` step installs `access-matrix` and `rbac-tool` for reading RBAC from the terminal.
@@ -29,7 +29,7 @@ git clone git@github.com:bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles
 sh ~/repos/personal/dotfiles/bootstrap.sh
 ```
 
-`bootstrap.sh` ensures Homebrew + uv, then `uv run python -m dotfiles` runs ordered steps: brew bundle, git/ssh, **chezmoi apply**, Linux GUI/layering, shell, DNS drop-ins, GNOME, fonts, neovim, checks.
+`bootstrap.sh` ensures Homebrew + uv, then `uv run python -m dotfiles` runs ordered steps: brew bundle, git/ssh, **chezmoi apply**, Linux GUI/layering, Kubernetes runtime, krew plugins, BPF tools, shell, DNS drop-ins, GNOME, fonts, neovim, checks.
 
 ```bash
 uv run python -m dotfiles --list
@@ -46,10 +46,11 @@ flowchart TD
   S[bootstrap.sh: ensure brew + uv] --> M[uv run python -m dotfiles]
   M --> H["homebrew (brew bundle)"] --> G[git_ssh] --> C[chezmoi apply]
   C --> D{OS?}
-  D -->|Linux| E[flatpak → ghostty → warp → albert → gaming → k8s]
+  D -->|Linux| E[flatpak → ghostty → warp → albert → gaming]
   D -->|macOS| X[Casks cover GUI, Ghostty and Warp]
-  E --> Z[shell_default → dns → gnome → fonts → neovim → checks]
-  X --> Z
+  E --> K["k8s → krew → bpf (Linux only)"]
+  X --> K
+  K --> Z[shell_default → dns → gnome → fonts → neovim → checks]
 ```
 
 ## Chezmoi layout
@@ -94,7 +95,7 @@ tests/
 - chezmoi only writes `$HOME` — install via Homebrew.
 - Ghostty/Warp still need `rpm-ostree` + reboot.
 - DNS uses `system/resolved.conf.d/*` drop-ins (not a full rewrite of resolved.conf).
-- Neovim config is chezmoi-managed; the neovim step only syncs plugins.
+- Neovim config is chezmoi-managed; the neovim step only syncs plugins. lazy.nvim's luarocks support is off (its Lua build needs readline headers Bazzite lacks); plugins that ship rockspecs get their dependencies as ordinary plugins instead.
 
 ## Notes (brew on macOS)
 
@@ -111,7 +112,7 @@ Fix (scoped to brew's git operations only — leaves `~/.gitconfig`, the include
     insteadOf = https://github.com/
 ```
 
-This rewrites `https://github.com/...` to `git@github.com:...` whenever git reads brew's system gitconfig (every brew-driven clone). The existing personal SSH key registered under `bourbonfgiles` via `gh` and `~/.ssh/config` handles auth. Linuxbrew lives at `~/.linuxbrew/etc/gitconfig` and would need the same block on Linux if the same error appears there.
+This rewrites `https://github.com/...` to `git@github.com:...` whenever git reads brew's system gitconfig (every brew-driven clone). The existing personal SSH key registered under `bourbonfgiles` via `gh` and `~/.ssh/config` handles auth. Linuxbrew's is `/home/linuxbrew/.linuxbrew/etc/gitconfig`, which would need the same block on Linux if the same error appears there.
 
 ## Ghostty
 
@@ -119,6 +120,7 @@ Config is split under `home/dot_config/ghostty/`:
 
 - `config` — includes the fragments
 - `appearance` (Smyck) / `input` / `quake` / `platform`
+- `quake` is a template: the quick terminal (``cmd+` ``) on macOS only, because GNOME has no wlr-layer-shell.
 
 ## Dev checks
 
