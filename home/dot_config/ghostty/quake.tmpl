@@ -1,3 +1,4 @@
+{{ if eq .chezmoi.os "darwin" -}}
 # --- QUAKE MODE (QUICK TERMINAL) ---
 # Maps Command + ` to globally toggle the dropdown terminal
 keybind = global:cmd+grave_accent=toggle_quick_terminal
@@ -10,3 +11,6 @@ quick-terminal-position = top
 
 # Automatically slide away when you click onto another application
 quick-terminal-autohide = true
+{{- else -}}
+# Quick terminal needs wlr-layer-shell, which GNOME doesn't implement.
+{{- end }}
