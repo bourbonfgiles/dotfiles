@@ -16,7 +16,8 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
 - **Containers** → Apple `container` on macOS; the OS's own `podman` on Linux.
 - **Local Kubernetes** → a 4-node k3d cluster on rootful Podman, empty until the `kube_local` repo bootstraps it. See [kubernetes.md](kubernetes.md).
-- **BPF tracing** → `bpftrace` and the BCC tools layered with `rpm-ostree` on Linux (for the BPF Performance Tools book); not available on macOS.
+- **BPF tracing** → `bpftrace`, the BCC tools, `bpftool` and `perf` layered with `rpm-ostree` on Linux (for the BPF Performance Tools book); not available on macOS.
+- **kubectl plugins** → the `krew` step installs `access-matrix` and `rbac-tool` for reading RBAC from the terminal.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`; Hammerspoon on macOS.
 
 Flatpaks install via a dedicated step (not `brew bundle`). Flatpak **overrides** are applied by chezmoi under `~/.local/share/flatpak/overrides/`.

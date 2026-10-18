@@ -137,4 +137,4 @@ fi
 # Secrets (not tracked in git)
 ################################################################################
 [[ -f "$HOME/.zshrc.secrets" ]] && source "$HOME/.zshrc.secrets"
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/bin:${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
