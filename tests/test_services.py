@@ -166,6 +166,26 @@ class TestK8s:
             "k3d", "cluster", "create", "dev", "--config", str(config)
         )
 
+    def test_create_cluster_retries_once(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        tmp_path: Path,
+    ) -> None:
+        config = tmp_path / "k3d" / "config.yaml"
+        config.parent.mkdir(parents=True)
+        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+        monkeypatch.setattr(platform, "is_mac", lambda: False)
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
+        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
+        fake_runner.script(["k3d", "cluster", "create"], returncode=1)
+        assert k8s.create_cluster("dev") is False
+        creates = [
+            c for c in fake_runner.calls if c[:3] == ["k3d", "cluster", "create"]
+        ]
+        assert len(creates) == 2
+
     def test_create_cluster_sets_docker_host_on_mac(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
