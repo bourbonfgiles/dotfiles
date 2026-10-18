@@ -12,6 +12,9 @@ agents: 3
 image: rancher/k3s:v1.36.4-k3s1
 kubeAPI:
   hostIP: "127.0.0.1"
+# Pre-created by k8s.py with a fixed subnet and bridge name; k3d leaves it in
+# place on cluster delete.
+network: k3d-dev
 # Persistent standalone registry (created by k8s.py, survives cluster deletes so
 # the image cache is kept). k3d prepends "k3d-" to the name below, so the
 # node-resolvable host is k3d-registry.localhost:5000, matching the mirror.
@@ -42,6 +45,17 @@ ports:
 # No bpffs volume: Cilium auto-mounts /sys/fs/bpf inside each agent, and eBPF
 # objects are kernel-global so host bpftool sees them regardless. A single
 # host bpffs shared across all node containers would collide pinned maps.
+# Pods inherit kubelet's resolv.conf. The node's own copy carries the host's LAN
+# search domains, so every external lookup first tried e.g. "<name>.fritz.box"
+# and could stall for seconds. This one points at Podman's DNS with no search.
+files:
+  - description: Pod DNS without LAN search domains
+    source: |
+      nameserver 10.89.0.1
+    destination: /etc/rancher/k3s/resolv.conf
+    nodeFilters:
+      - server:*
+      - agent:*
 options:
   k3d:
     disableLoadbalancer: false
@@ -65,6 +79,10 @@ options:
       - arg: --disable-kube-proxy
         nodeFilters:
           - server:*
+      - arg: --resolv-conf=/etc/rancher/k3s/resolv.conf
+        nodeFilters:
+          - server:*
+          - agent:*
       - arg: --node-taint=node-role.kubernetes.io/control-plane:NoSchedule
         nodeFilters:
           - server:*
