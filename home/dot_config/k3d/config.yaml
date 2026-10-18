@@ -37,12 +37,9 @@ ports:
   - port: 30004:30004
     nodeFilters:
       - loadbalancer
-# A stable bpffs mount so Cilium's eBPF maps persist and are inspectable for
-# tracing work, rather than relying on auto-propagation into the node containers.
-volumes:
-  - volume: /sys/fs/bpf:/sys/fs/bpf:shared
-    nodeFilters:
-      - all
+# No bpffs volume: Cilium auto-mounts /sys/fs/bpf inside each agent, and eBPF
+# objects are kernel-global so host bpftool sees them regardless. A single
+# host bpffs shared across all node containers would collide pinned maps.
 options:
   k3d:
     disableLoadbalancer: false

@@ -36,8 +36,15 @@ _MACHINE_MEMORY_MB = 8192
 # "k3d-registry.localhost" on the cluster network (what the config mirror uses).
 _REGISTRY_NAME = "registry.localhost"
 _REGISTRY_NODE_HOST = "k3d-registry.localhost"
-# Published on the host for `docker push`; 5000 clashes with macOS AirPlay.
-_REGISTRY_PORT = "5050"
+# Bind the host-published port to loopback only; a dev registry has no reason
+# to be reachable from the LAN. 5000 clashes with macOS AirPlay, so use 5050.
+_REGISTRY_PORT = "127.0.0.1:5050"
+# Podman's default bridge network is "podman", not the "bridge" k3d assumes on
+# Docker, so the macOS/Podman path must pass it explicitly to registry create.
+_PODMAN_NETWORK = "podman"
+# Verified present in the Cilium Helm repo; matches the kube_local HelmRelease
+# minor so the manual install and Flux agree on the chart.
+_CILIUM_CHART_VERSION = "1.18.15"
 
 
 def _machine_field(field: str) -> object | None:
@@ -193,14 +200,12 @@ def _ensure_registry(env: dict[str, str]) -> bool:
     if _REGISTRY_NODE_HOST in listed:
         return True
     logger.info("Creating persistent registry %r…", _REGISTRY_NODE_HOST)
-    return (
-        shell.run(
-            ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_PORT],
-            check=False,
-            env=_run_env(env),
-        ).returncode
-        == 0
-    )
+    cmd = ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_PORT]
+    # k3d's registry defaults to the "bridge" network, which Docker (Linux) has
+    # but Podman (macOS) does not — Podman's default is "podman".
+    if platform.is_mac():
+        cmd += ["--default-network", _PODMAN_NETWORK]
+    return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
 
 
 def create_cluster(name: str = CLUSTER_NAME) -> bool:
@@ -261,6 +266,60 @@ def delete_cluster(name: str = CLUSTER_NAME) -> bool:
     )
 
 
+def _cilium_values_file() -> Path:
+    """Path to the chezmoi-managed Cilium Helm values (shared with Flux)."""
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+    return config_home / "k3d" / "cilium-values.yaml"
+
+
+def install_cilium(name: str = CLUSTER_NAME) -> bool:
+    """Install Cilium into an existing cluster via Helm; return True on success.
+
+    Explicit and never automatic, like create/delete: the cluster boots CNI-less
+    (flannel + kube-proxy disabled), so nodes stay NotReady until this runs. The
+    values come from the tracked cilium-values.yaml, which a later Flux
+    HelmRelease reuses unchanged so the two never drift.
+    """
+    if not shell.command_exists("helm"):
+        logger.warning("helm not found; cannot install Cilium.")
+        return False
+    extra = _docker_env()
+    if extra is None:
+        logger.warning("No Docker API runtime available (Podman machine?).")
+        return False
+    values = _cilium_values_file()
+    if not values.is_file():
+        logger.warning("Cilium values not found at %s; run chezmoi apply.", values)
+        return False
+    env = _run_env(extra)
+    shell.run(
+        ["helm", "repo", "add", "cilium", "https://helm.cilium.io"],
+        check=False,
+        env=env,
+    )
+    shell.run(["helm", "repo", "update", "cilium"], check=False, env=env)
+    logger.info("Installing Cilium %s into %r…", _CILIUM_CHART_VERSION, name)
+    return (
+        shell.run(
+            [
+                "helm",
+                "install",
+                "cilium",
+                "cilium/cilium",
+                "--version",
+                _CILIUM_CHART_VERSION,
+                "--namespace",
+                "kube-system",
+                "--values",
+                str(values),
+            ],
+            check=False,
+            env=env,
+        ).returncode
+        == 0
+    )
+
+
 def run(settings: Settings) -> None:
     """Verify the k3d runtime is ready (no cluster created)."""
     if not shell.command_exists("k3d"):
@@ -278,4 +337,4 @@ def run(settings: Settings) -> None:
     logger.info("k3d ready. create_cluster() makes the dev cluster.")
 
 
-__all__ = ["create_cluster", "delete_cluster", "run", "CLUSTER_NAME"]
+__all__ = ["create_cluster", "delete_cluster", "install_cilium", "run", "CLUSTER_NAME"]
