@@ -1,9 +1,9 @@
 """Local Kubernetes via k3d on every target.
 
 k3d runs k3s nodes as containers through the Docker API, so one tool gives the
-same cluster (1 server + 3 agents) on macOS, Bazzite, and Silverblue. On Linux
-k3d talks to docker/podman directly; on macOS it talks to the Podman machine's
-Docker-compatible socket via DOCKER_HOST.
+same cluster (1 server + 3 agents) on macOS, Bazzite, and Silverblue. The
+runtime is rootful Podman everywhere, since eBPF CNIs need to load programs:
+the system podman.socket on Linux, the Podman machine on macOS.
 
 The bootstrap step only verifies the runtime is ready; creating or destroying a
 cluster is explicit via create_cluster() / delete_cluster(), never automatic.
@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 
 from ..config.settings import Settings
-from ..utils import platform, shell
+from ..utils import platform, shell, system
 from ..utils.logging import get_logger
 
 logger = get_logger("k8s")
@@ -40,11 +40,17 @@ _REGISTRY_NODE_HOST = "k3d-registry.localhost"
 # to be reachable from the LAN. 5000 clashes with macOS AirPlay, so use 5050.
 _REGISTRY_PORT = "127.0.0.1:5050"
 # Podman's default bridge network is "podman", not the "bridge" k3d assumes on
-# Docker, so the macOS/Podman path must pass it explicitly to registry create.
+# Docker, so registry create must pass it explicitly.
 _PODMAN_NETWORK = "podman"
-# Verified present in the Cilium Helm repo; matches the kube_local HelmRelease
-# minor so the manual install and Flux agree on the chart.
-_CILIUM_CHART_VERSION = "1.18.15"
+_LINUX_SOCKET = "/run/podman/podman.sock"
+_SOCKET_DROPIN_DIR = "/etc/systemd/system/podman.socket.d"
+_SOCKET_DROPIN = "dotfiles-wheel.conf"
+_SOCKET_DROPIN_BODY = """\
+[Socket]
+SocketGroup=wheel
+SocketMode=0660
+ExecStartPre=/usr/bin/install -d -m 0750 -o root -g wheel /run/podman
+"""
 
 
 def _machine_field(field: str) -> object | None:
@@ -152,16 +158,42 @@ def _ensure_podman_machine() -> bool:
     return _ensure_resources()
 
 
-def _docker_env() -> dict[str, str] | None:
-    """Env that points k3d at a Docker API.
+def _linux_socket_ready() -> bool:
+    try:
+        return Path(_LINUX_SOCKET).is_socket() and os.access(
+            _LINUX_SOCKET, os.R_OK | os.W_OK
+        )
+    except OSError:
+        return False
 
-    macOS: start the Podman machine and set DOCKER_HOST to its socket.
-    Linux: None — k3d uses the ambient docker/podman socket as-is.
-    Returns an empty dict on Linux-with-nothing-extra, or None if the macOS
-    runtime could not be made ready.
+
+def _ensure_linux_socket() -> bool:
+    """Enable the rootful podman.socket and let wheel use it without sudo.
+
+    Socket access is root-equivalent, like the docker group would be.
+    """
+    if _linux_socket_ready():
+        return True
+    logger.info("Enabling rootful podman.socket for wheel (sudo)…")
+    shell.run(["sudo", "install", "-d", "-m", "0755", _SOCKET_DROPIN_DIR], check=False)
+    system.sudo_write(f"{_SOCKET_DROPIN_DIR}/{_SOCKET_DROPIN}", _SOCKET_DROPIN_BODY)
+    shell.run(["sudo", "systemctl", "daemon-reload"], check=False)
+    shell.run(["sudo", "systemctl", "enable", "podman.socket"], check=False)
+    shell.run(["sudo", "systemctl", "restart", "podman.socket"], check=False)
+    return _linux_socket_ready()
+
+
+def _docker_env() -> dict[str, str] | None:
+    """Env that points k3d at a rootful Podman Docker-API socket.
+
+    macOS: start the Podman machine and use its socket.
+    Linux: enable the system podman.socket and use it.
+    Returns None if the runtime could not be made ready.
     """
     if not platform.is_mac():
-        return {}
+        if not _ensure_linux_socket():
+            return None
+        return {"DOCKER_HOST": f"unix://{_LINUX_SOCKET}"}
     if not shell.command_exists("podman") or not _ensure_podman_machine():
         return None
     sock = _podman_socket()
@@ -200,11 +232,16 @@ def _ensure_registry(env: dict[str, str]) -> bool:
     if _REGISTRY_NODE_HOST in listed:
         return True
     logger.info("Creating persistent registry %r…", _REGISTRY_NODE_HOST)
-    cmd = ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_PORT]
-    # k3d's registry defaults to the "bridge" network, which Docker (Linux) has
-    # but Podman (macOS) does not — Podman's default is "podman".
-    if platform.is_mac():
-        cmd += ["--default-network", _PODMAN_NETWORK]
+    cmd = [
+        "k3d",
+        "registry",
+        "create",
+        _REGISTRY_NAME,
+        "--port",
+        _REGISTRY_PORT,
+        "--default-network",
+        _PODMAN_NETWORK,
+    ]
     return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
 
 
@@ -266,75 +303,20 @@ def delete_cluster(name: str = CLUSTER_NAME) -> bool:
     )
 
 
-def _cilium_values_file() -> Path:
-    """Path to the chezmoi-managed Cilium Helm values (shared with Flux)."""
-    config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
-    return config_home / "k3d" / "cilium-values.yaml"
-
-
-def install_cilium(name: str = CLUSTER_NAME) -> bool:
-    """Install Cilium into an existing cluster via Helm; return True on success.
-
-    Explicit and never automatic, like create/delete: the cluster boots CNI-less
-    (flannel + kube-proxy disabled), so nodes stay NotReady until this runs. The
-    values come from the tracked cilium-values.yaml, which a later Flux
-    HelmRelease reuses unchanged so the two never drift.
-    """
-    if not shell.command_exists("helm"):
-        logger.warning("helm not found; cannot install Cilium.")
-        return False
-    extra = _docker_env()
-    if extra is None:
-        logger.warning("No Docker API runtime available (Podman machine?).")
-        return False
-    values = _cilium_values_file()
-    if not values.is_file():
-        logger.warning("Cilium values not found at %s; run chezmoi apply.", values)
-        return False
-    env = _run_env(extra)
-    shell.run(
-        ["helm", "repo", "add", "cilium", "https://helm.cilium.io"],
-        check=False,
-        env=env,
-    )
-    shell.run(["helm", "repo", "update", "cilium"], check=False, env=env)
-    logger.info("Installing Cilium %s into %r…", _CILIUM_CHART_VERSION, name)
-    return (
-        shell.run(
-            [
-                "helm",
-                "install",
-                "cilium",
-                "cilium/cilium",
-                "--version",
-                _CILIUM_CHART_VERSION,
-                "--namespace",
-                "kube-system",
-                "--values",
-                str(values),
-            ],
-            check=False,
-            env=env,
-        ).returncode
-        == 0
-    )
-
-
 def run(settings: Settings) -> None:
     """Verify the k3d runtime is ready (no cluster created)."""
     if not shell.command_exists("k3d"):
         logger.warning("k3d not found; local Kubernetes unavailable.")
         return
-    if platform.is_mac():
-        if _docker_env() is None:
-            logger.warning(
-                "k3d present but Podman machine not ready; "
-                "run `podman machine start` before creating a cluster."
-            )
-            return
-        logger.info("k3d ready (via Podman). create_cluster() makes the dev cluster.")
+    if _docker_env() is None:
+        hint = (
+            "run `podman machine start`"
+            if platform.is_mac()
+            else f"check `systemctl status podman.socket` and {_LINUX_SOCKET}"
+        )
+        logger.warning("k3d present but Podman not ready; %s.", hint)
         return
-    logger.info("k3d ready. create_cluster() makes the dev cluster.")
+    logger.info("k3d ready (via Podman). create_cluster() makes the dev cluster.")
 
 
-__all__ = ["create_cluster", "delete_cluster", "install_cilium", "run", "CLUSTER_NAME"]
+__all__ = ["create_cluster", "delete_cluster", "run", "CLUSTER_NAME"]
