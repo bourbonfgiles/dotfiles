@@ -22,10 +22,9 @@ return {
         end,
       },
     },
-    rocks = {
-      "mimetypes", -- detect file type of external body files
-      "xml2lua", -- XML request bodies
-    },
+    -- The luarocks build fails here and lazy retries it on every start; the two
+    -- rocks it wants only cover XML and external-file bodies.
+    build = false,
     keys = {
       { "<leader>Rr", "<cmd>Rest run<cr>", ft = "http", desc = "Run request under cursor" },
       { "<leader>Rl", "<cmd>Rest last<cr>", ft = "http", desc = "Re-run last request" },
