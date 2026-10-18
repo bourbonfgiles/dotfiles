@@ -51,7 +51,7 @@ fi
 
 if command -v uv >/dev/null 2>&1; then
   log "Starting the bootstrap via uv…"
-  exec uv run --python 3.10 python -m dotfiles "$@"
+  exec uv run --python 3.13 python -m dotfiles "$@"
 fi
 
 # Fallback: no uv and its install failed — use any system python3.

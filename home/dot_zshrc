@@ -2,9 +2,11 @@
 ################################################################################
 # History
 ################################################################################
-HISTIGNORE='cps*:cps *:cps:cpe*:cpe: cpe *:history:ll:ls:z:exit:k9s'
-HISTSIZE=10000
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=20000
 SAVEHIST=20000
+HISTORY_IGNORE='(cps*|cpe*|history|ll|ls|z|exit|k9s)'
+setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 
 ################################################################################
 # Homebrew PATH (macOS + Linux)
@@ -62,7 +64,6 @@ fi
 # Aliases
 ################################################################################
 alias ll='eza -la --group-directories-first --icons --color=always --header'
-alias z='zoxide'
 alias top='btm'
 if command -v xclip >/dev/null; then
   alias xclip='xclip -selection clipboard'
@@ -92,10 +93,8 @@ fi
 ################################################################################
 # fzf (key-bindings + completion)
 ################################################################################
-if command -v brew >/dev/null; then
-  FZF_PREFIX="$(brew --prefix)"
-  [[ -f "${FZF_PREFIX}/opt/fzf/shell/key-bindings.zsh" ]] && source "${FZF_PREFIX}/opt/fzf/shell/key-bindings.zsh"
-  [[ -f "${FZF_PREFIX}/opt/fzf/shell/completion.zsh"    ]] && source "${FZF_PREFIX}/opt/fzf/shell/completion.zsh"
+if command -v fzf >/dev/null; then
+  source <(fzf --zsh)
 fi
 
 ################################################################################
@@ -136,4 +135,4 @@ fi
 # Secrets (not tracked in git)
 ################################################################################
 [[ -f "$HOME/.zshrc.secrets" ]] && source "$HOME/.zshrc.secrets"
-export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
