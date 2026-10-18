@@ -166,7 +166,7 @@ class TestK8s:
             "k3d", "cluster", "create", "dev", "--config", str(config)
         )
 
-    def test_create_cluster_retries_once(
+    def test_create_cluster_retries(
         self,
         monkeypatch: pytest.MonkeyPatch,
         fake_runner: FakeRunner,
@@ -179,12 +179,13 @@ class TestK8s:
         monkeypatch.setattr(platform, "is_mac", lambda: False)
         monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
         monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
+        monkeypatch.setattr(k8s, "_CREATE_RETRY_PAUSE_S", 0)
         fake_runner.script(["k3d", "cluster", "create"], returncode=1)
         assert k8s.create_cluster("dev") is False
         creates = [
             c for c in fake_runner.calls if c[:3] == ["k3d", "cluster", "create"]
         ]
-        assert len(creates) == 2
+        assert len(creates) == 3
 
     def test_create_cluster_sets_docker_host_on_mac(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
