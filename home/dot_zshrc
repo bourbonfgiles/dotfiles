@@ -27,6 +27,27 @@ fi
 # Zsh completion system (must be before any compdef/completion usage)
 ################################################################################
 autoload -Uz compinit
+
+# Cache gh / kubectl / helm completions to a dir on $fpath, regenerating a file
+# only when its binary is newer. compinit then loads them from disk, so no
+# completion subprocess spawns per shell. Must run before compinit.
+_zcompcache="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/completions"
+mkdir -p "$_zcompcache"
+fpath=("$_zcompcache" $fpath)
+_cache_completion() {
+  local tool="$1" file="$_zcompcache/_$1"
+  command -v "$tool" >/dev/null || return
+  if [[ ! -f "$file" || "$(command -v "$tool")" -nt "$file" ]]; then
+    case "$tool" in
+      gh) gh completion -s zsh >"$file" ;;
+      *)  "$tool" completion zsh >"$file" ;;
+    esac
+  fi
+}
+_cache_completion gh
+_cache_completion kubectl
+_cache_completion helm
+
 # Cache the completion dump; rebuild it only once a day (-C skips the security
 # check on the cached dump, making subsequent shells start noticeably faster).
 _zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
@@ -75,19 +96,6 @@ if command -v brew >/dev/null; then
   FZF_PREFIX="$(brew --prefix)"
   [[ -f "${FZF_PREFIX}/opt/fzf/shell/key-bindings.zsh" ]] && source "${FZF_PREFIX}/opt/fzf/shell/key-bindings.zsh"
   [[ -f "${FZF_PREFIX}/opt/fzf/shell/completion.zsh"    ]] && source "${FZF_PREFIX}/opt/fzf/shell/completion.zsh"
-fi
-
-################################################################################
-# gh / kubectl / helm completions
-################################################################################
-if command -v gh >/dev/null; then
-  eval "$(gh completion -s zsh)"
-fi
-if command -v kubectl >/dev/null; then
-  source <(kubectl completion zsh)
-fi
-if command -v helm >/dev/null; then
-  source <(helm completion zsh)
 fi
 
 ################################################################################

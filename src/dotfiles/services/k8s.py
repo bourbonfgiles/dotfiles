@@ -32,6 +32,12 @@ _PODMAN_PROVIDER = "applehv"
 _CREATE_TIMEOUT = "300s"
 # Holds the control plane, Cilium, and a JVM game server at once; 2 GB OOMs.
 _MACHINE_MEMORY_MB = 8192
+# k3d prepends "k3d-" to the registry name, so this resolves as
+# "k3d-registry.localhost" on the cluster network (what the config mirror uses).
+_REGISTRY_NAME = "registry.localhost"
+_REGISTRY_NODE_HOST = "k3d-registry.localhost"
+# Published on the host for `docker push`; 5000 clashes with macOS AirPlay.
+_REGISTRY_PORT = "5050"
 
 
 def _machine_field(field: str) -> object | None:
@@ -170,12 +176,39 @@ def _config_file() -> Path:
     return config_home / "k3d" / "config.yaml"
 
 
+def _ensure_registry(env: dict[str, str]) -> bool:
+    """Ensure the persistent standalone registry the config references exists.
+
+    The config uses registries.use (not create), so the registry must outlive
+    any single cluster — this keeps the image cache across rebuilds. k3d
+    prepends "k3d-" to the name, so "registry.localhost" resolves as
+    "k3d-registry.localhost:5000" from the nodes, matching the mirror.
+    """
+    listed = shell.run(
+        ["k3d", "registry", "list", "--output", "json"],
+        check=False,
+        capture=True,
+        env=_run_env(env),
+    ).stdout
+    if _REGISTRY_NODE_HOST in listed:
+        return True
+    logger.info("Creating persistent registry %r…", _REGISTRY_NODE_HOST)
+    return (
+        shell.run(
+            ["k3d", "registry", "create", _REGISTRY_NAME, "--port", _REGISTRY_PORT],
+            check=False,
+            env=_run_env(env),
+        ).returncode
+        == 0
+    )
+
+
 def create_cluster(name: str = CLUSTER_NAME) -> bool:
     """Create the k3d cluster from the tracked config; return True on success.
 
     The config pins the k3s version, disables Traefik, servicelb, Flannel, the
-    default network policy, and kube-proxy, maps the host ports, and creates the
-    local registry. A CNI is installed afterwards, outside this step.
+    default network policy, and kube-proxy, maps the host ports, and attaches
+    the persistent registry. A CNI is installed afterwards, outside this step.
     """
     if not shell.command_exists("k3d"):
         logger.warning("k3d not found; cannot create a cluster.")
@@ -187,6 +220,9 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
     config = _config_file()
     if not config.is_file():
         logger.warning("k3d config not found at %s; run chezmoi apply.", config)
+        return False
+    if not _ensure_registry(extra):
+        logger.warning("Could not ensure the persistent registry; aborting.")
         return False
     logger.info("Creating k3d cluster %r from %s…", name, config)
     return (

@@ -161,6 +161,9 @@ class TestK8s:
         monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
         assert k8s.create_cluster("dev") is True
         assert fake_runner.ran(
+            "k3d", "registry", "create", "registry.localhost", "--port", "5050"
+        )
+        assert fake_runner.ran(
             "k3d", "cluster", "create", "dev", "--config", str(config)
         )
 

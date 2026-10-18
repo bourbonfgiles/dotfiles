@@ -7,13 +7,15 @@ metadata:
 # (not SQLite), matching the datastore EKS runs.
 servers: 1
 agents: 3
-# Current k3s/EKS-valid minor. Bump as desired; this is a local cluster.
+# A Kubernetes minor that EKS also offers (not EKS's own distribution). Match
+# the minor to your target EKS with `aws eks describe-cluster`; bump freely.
 image: rancher/k3s:v1.36.4-k3s1
+# Persistent standalone registry (created by k8s.py, survives cluster deletes so
+# the image cache is kept). k3d prepends "k3d-" to the name below, so the
+# node-resolvable host is k3d-registry.localhost:5000, matching the mirror.
 registries:
-  create:
-    name: k3d-registry.localhost
-    host: "0.0.0.0"
-    hostPort: "5050"
+  use:
+    - k3d-registry.localhost:5000
   config: |
     mirrors:
       "k3d-registry.localhost:5000":
@@ -35,6 +37,12 @@ ports:
   - port: 30004:30004
     nodeFilters:
       - loadbalancer
+# A stable bpffs mount so Cilium's eBPF maps persist and are inspectable for
+# tracing work, rather than relying on auto-propagation into the node containers.
+volumes:
+  - volume: /sys/fs/bpf:/sys/fs/bpf:shared
+    nodeFilters:
+      - all
 options:
   k3d:
     disableLoadbalancer: false
