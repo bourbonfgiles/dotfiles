@@ -1,4 +1,4 @@
-"""BPF tracing tools (bpftrace, BCC) for the BPF Performance Tools book; Linux only."""
+"""BPF tracing tools (bpftrace, BCC, bpftool, perf) for the BPF Performance Tools book; Linux only."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ from ..utils.platform import OSKind
 logger = get_logger("bpf")
 
 # Fedora's own repos; BCC's tools install under /usr/share/bcc/tools.
-_PACKAGES = ("bpftrace", "bcc-tools")
+_PACKAGES = ("bpftrace", "bcc-tools", "bpftool", "perf")
 
 
 def run(settings: Settings) -> None:
-    """Layer bpftrace and the BCC tools (no-op on macOS, which has no BPF)."""
+    """Layer the BPF tracing tools (no-op on macOS, which has no BPF)."""
     kind = platform.os_kind()
     if kind is OSKind.MAC:
         logger.info("macOS: BPF tracing is Linux-only; run the tools in a Linux VM.")

@@ -349,6 +349,39 @@ def _ensure_registry(env: dict[str, str]) -> bool:
     return shell.run(cmd, check=False, env=_run_env(env)).returncode == 0
 
 
+def _pin_server_ip(env: dict[str, str], name: str) -> None:
+    """Make server-0 keep its address across restarts.
+
+    etcd records the server's IP as its peer URL, but Podman hands out a new one
+    on boot, so k3s then refuses to start ("not a member of the etcd cluster").
+    Reconnecting with --ip makes the current address static.
+    """
+    podman = ["podman", "--url", env["DOCKER_HOST"]]
+    node = f"k3d-{name}-server-0"
+    ip = shell.run(
+        [
+            *podman,
+            "inspect",
+            node,
+            "--format",
+            f'{{{{(index .NetworkSettings.Networks "{_CLUSTER_NETWORK}").IPAddress}}}}',
+        ],
+        check=False,
+        capture=True,
+    ).stdout.strip()
+    if not ip:
+        logger.warning("Could not read %s's IP; it may change on reboot.", node)
+        return
+    logger.info("Pinning %s to %s…", node, ip)
+    for cmd in (
+        ["stop", node],
+        ["network", "disconnect", _CLUSTER_NETWORK, node],
+        ["network", "connect", "--ip", ip, _CLUSTER_NETWORK, node],
+        ["start", node],
+    ):
+        shell.run([*podman, *cmd], check=False)
+
+
 def create_cluster(name: str = CLUSTER_NAME) -> bool:
     """Create the k3d cluster from the tracked config; return True on success.
 
@@ -388,6 +421,7 @@ def create_cluster(name: str = CLUSTER_NAME) -> bool:
     for attempt in range(1, _CREATE_ATTEMPTS + 1):
         logger.info("Creating k3d cluster %r from %s…", name, config)
         if shell.run(cmd, check=False, env=_run_env(extra)).returncode == 0:
+            _pin_server_ip(extra, name)
             return True
         if attempt < _CREATE_ATTEMPTS:
             logger.warning("k3d cluster create failed; retrying.")

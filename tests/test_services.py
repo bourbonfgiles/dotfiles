@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from dotfiles.config.settings import Settings
-from dotfiles.services import bpf, chezmoi_apply, flatpak, homebrew, k8s
+from dotfiles.services import bpf, chezmoi_apply, flatpak, homebrew, k8s, krew
 from dotfiles.utils import platform, shell
 from dotfiles.utils.exceptions import StepError
 from dotfiles.utils.platform import OSKind
@@ -147,6 +147,16 @@ class TestConfigData:
         assert fonts.NERD_FONTS is data.NERD_FONTS
 
 
+@pytest.fixture
+def no_system_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make _sudo_install see no existing file, whatever this host has in /etc."""
+
+    def missing(self: object, *args: object, **kwargs: object) -> str:
+        raise FileNotFoundError
+
+    monkeypatch.setattr(Path, "read_text", missing)
+
+
 class TestK8s:
     def test_create_cluster_runs_k3d_on_linux(
         self,
@@ -165,6 +175,37 @@ class TestK8s:
         assert fake_runner.ran("k3d", "registry", "create", "registry.localhost")
         assert fake_runner.ran(
             "k3d", "cluster", "create", "dev", "--config", str(config)
+        )
+
+    def test_create_cluster_pins_server_ip(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        tmp_path: Path,
+    ) -> None:
+        config = tmp_path / "k3d" / "config.yaml"
+        config.parent.mkdir(parents=True)
+        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+        monkeypatch.setattr(platform, "is_mac", lambda: False)
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
+        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
+        sock = "unix:///run/podman/podman.sock"
+        fake_runner.script(
+            ["podman", "--url", sock, "inspect", "k3d-dev-server-0"],
+            stdout="10.89.0.20\n",
+        )
+        assert k8s.create_cluster("dev") is True
+        assert fake_runner.ran(
+            "podman",
+            "--url",
+            sock,
+            "network",
+            "connect",
+            "--ip",
+            "10.89.0.20",
+            "k3d-dev",
+            "k3d-dev-server-0",
         )
 
     def test_create_cluster_retries(
@@ -249,7 +290,7 @@ class TestK8s:
         assert not fake_runner.ran("podman", "--url", "unix:///s", "network", "create")
 
     def test_host_dns_unit_routes_domain_on_cluster_bridge(
-        self, fake_runner: FakeRunner
+        self, fake_runner: FakeRunner, no_system_files: None
     ) -> None:
         body = k8s._KUBE_DNS_UNIT_BODY
         assert "BindsTo=sys-subsystem-net-devices-k3d0.device" in body
@@ -265,7 +306,7 @@ class TestK8s:
         )
 
     def test_podman_logging_drop_in_uses_capped_files(
-        self, fake_runner: FakeRunner
+        self, fake_runner: FakeRunner, no_system_files: None
     ) -> None:
         assert 'log_driver = "k8s-file"' in k8s._PODMAN_LOGGING_BODY
         assert "log_size_max" in k8s._PODMAN_LOGGING_BODY
@@ -307,6 +348,43 @@ class TestK8s:
         assert fake_runner.ran("sudo", "systemctl", "restart", "podman.socket")
 
 
+class TestKrew:
+    def test_skips_without_krew(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        settings: Settings,
+    ) -> None:
+        monkeypatch.setattr(shell, "command_exists", lambda name: False)
+        krew.run(settings)
+        assert fake_runner.calls == []
+
+    def test_installs_only_missing_plugins(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        settings: Settings,
+    ) -> None:
+        monkeypatch.setattr(shell, "command_exists", lambda name: True)
+        fake_runner.script(["kubectl", "krew", "list"], stdout="krew\naccess-matrix\n")
+        krew.run(settings)
+        assert fake_runner.ran("kubectl", "krew", "install", "rbac-tool")
+        assert not fake_runner.ran("kubectl", "krew", "install", "access-matrix")
+
+    def test_noop_when_all_installed(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        settings: Settings,
+    ) -> None:
+        monkeypatch.setattr(shell, "command_exists", lambda name: True)
+        fake_runner.script(
+            ["kubectl", "krew", "list"], stdout="access-matrix\nrbac-tool\n"
+        )
+        krew.run(settings)
+        assert not fake_runner.ran("kubectl", "krew", "update")
+
+
 class TestBpf:
     def test_noop_on_mac(
         self,
@@ -318,7 +396,7 @@ class TestBpf:
         bpf.run(settings)
         assert fake_runner.calls == []
 
-    def test_layers_both_packages_on_atomic_fedora(
+    def test_layers_all_packages_on_atomic_fedora(
         self,
         monkeypatch: pytest.MonkeyPatch,
         fake_runner: FakeRunner,
@@ -327,7 +405,7 @@ class TestBpf:
         monkeypatch.setattr(platform, "os_kind", lambda: OSKind.BAZZITE)
         fake_runner.script(["rpm", "-q"], returncode=1)
         bpf.run(settings)
-        for package in ("bpftrace", "bcc-tools"):
+        for package in ("bpftrace", "bcc-tools", "bpftool", "perf"):
             assert fake_runner.ran(
                 "sudo", "rpm-ostree", "install", "--idempotent", package
             )

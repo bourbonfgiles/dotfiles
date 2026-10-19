@@ -39,5 +39,7 @@ CORE_TOOLS: tuple[str, ...] = (
     "fd",
     "bat",
 )
+# kubectl plugins installed through krew: RBAC access matrices.
+KREW_PLUGINS: tuple[str, ...] = ("access-matrix", "rbac-tool")
 # ~/.config/<name> directories expected after chezmoi apply.
 LINKED_CONFIGS: tuple[str, ...] = ("nvim", "ghostty", "starship", "k9s", "k3d")

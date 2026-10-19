@@ -16,9 +16,11 @@
 
 # Taps
 tap "argoproj/tap"
+tap "aws/tap"
 tap "azure/kubelogin"
 tap "cloudflare/cloudflare"
 tap "fluxcd/tap"
+tap "iann0036/iamlive"
 tap "idoavrah/homebrew"
 tap "Valkyrie00/homebrew-bbrew"
 
@@ -71,6 +73,7 @@ brew "zsh"
 brew "awscli"
 brew "awscli-local"
 brew "aws-vault"
+brew "iann0036/iamlive/iamlive"
 brew "azure-cli"
 brew "azure/kubelogin/kubelogin"
 brew "powershell"
@@ -99,6 +102,13 @@ brew "cilium-cli"
 brew "eksctl"
 brew "kubeconform"
 brew "kwok"
+brew "aws/tap/eks-node-viewer"
+brew "ko"
+
+# Secrets and local TLS
+brew "age"
+brew "mkcert"
+brew "sops"
 
 
 ################################################################################

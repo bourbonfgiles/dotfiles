@@ -31,7 +31,16 @@ style = "bold blue"
 [kubernetes]
 disabled = false
 symbol = "☸️ "
-style = "bold blue"
+format = '[$symbol$context( \($namespace\))]($style) '
+style = "bold red"
+
+[[kubernetes.contexts]]
+context_pattern = "k3d-.*"
+style = "bold green"
+
+[[kubernetes.contexts]]
+context_pattern = "arn:aws:eks:(?P<region>[\\w-]+):\\d+:cluster/(?P<cluster>[\\w-]+)"
+context_alias = "eks:$cluster"
 
 # Terraform configuration
 [terraform]

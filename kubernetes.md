@@ -48,7 +48,7 @@ flowchart TB
     logs["containers.conf.d<br/>k8s-file log driver"]
     nm["NetworkManager<br/>no DoT to the router"]
     unit["dotfiles-kube-dns.service<br/>resolvectl on k3d0"]
-    bpf["bpftrace + BCC tools"]
+    bpf["bpftrace, BCC, bpftool, perf"]
   end
   subgraph podman["Rootful Podman"]
     registry["k3d-registry.localhost<br/>host port 5050"]
@@ -68,9 +68,25 @@ flowchart TB
 | Command | Does |
 | --- | --- |
 | `uv run python -m dotfiles --only k8s` | Socket, logging, host DNS unit. One sudo prompt. |
-| `uv run python -m dotfiles --only bpf` | Layers `bpftrace` and `bcc-tools`; reboot after. |
+| `uv run python -m dotfiles --only bpf` | Layers `bpftrace`, `bcc-tools`, `bpftool` and `perf`; reboot after. |
+| `uv run python -m dotfiles --only krew` | Installs the `access-matrix` and `rbac-tool` kubectl plugins. |
 | `uv run python -c 'from dotfiles.services import k8s; k8s.create_cluster()'` | Network, registry, cluster. |
 | `uv run python -c 'from dotfiles.services import k8s; k8s.delete_cluster()'` | Cluster only; network and registry stay. |
+| `kube-up` | Starts the registry and the cluster, then lists nodes. |
+| `kube-down` | Stops the cluster and the registry. Nothing starts at boot. |
+
+> [!NOTE]
+> The k3d containers use `unless-stopped`, so a reboot with the cluster up brings
+> back `server-0` alone and the API is unreachable. `kube-up` fixes it, and
+> `kube-down` before a reboot keeps everything off.
+
+> [!IMPORTANT]
+> etcd records `server-0`'s IP as its peer URL, but Podman gives it a new one on
+> boot and k3s then won't start ("not a member of the etcd cluster").
+> `create_cluster()` pins the IP it got. For an older cluster:
+> `kpodman stop k3d-dev-server-0`, `kpodman network disconnect k3d-dev k3d-dev-server-0`,
+> `kpodman network connect --ip <old IP> k3d-dev k3d-dev-server-0`. The old IP is
+> in the server's "Found [...]" log line.
 
 Then switch to `kube_local` and run `./overlays/local/bootstrap.sh`.
 
@@ -110,7 +126,13 @@ Network and DNS
 Tooling
 
 - Flux CLI from `fluxcd/tap` (brew's `flux` is InfluxData's), plus `hubble`,
-  `k9s`, `helm`, `cilium-cli`.
+  `k9s`, `helm`, `cilium-cli`. k9s gets the Flux plugins
+  (`home/dot_config/k9s/plugins.yaml`).
+- For the kube_local lessons: `mkcert`, `sops`, `age`, `ko`, `kwok`.
+- For EKS: `eks-node-viewer`, `iamlive` (the IAM actions a command needs), and
+  krew's `access-matrix` and `rbac-tool` for RBAC.
+- The starship prompt shows the context: green for `k3d-*`, red for anything
+  else, EKS ARNs shortened to `eks:<cluster>`.
 - `bpf` step for the BPF Performance Tools book.
 
 On macOS the cluster runs inside a rootful `applehv` Podman machine, so the
