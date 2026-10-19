@@ -177,6 +177,37 @@ class TestK8s:
             "k3d", "cluster", "create", "dev", "--config", str(config)
         )
 
+    def test_create_cluster_pins_server_ip(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_runner: FakeRunner,
+        tmp_path: Path,
+    ) -> None:
+        config = tmp_path / "k3d" / "config.yaml"
+        config.parent.mkdir(parents=True)
+        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+        monkeypatch.setattr(platform, "is_mac", lambda: False)
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
+        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
+        sock = "unix:///run/podman/podman.sock"
+        fake_runner.script(
+            ["podman", "--url", sock, "inspect", "k3d-dev-server-0"],
+            stdout="10.89.0.20\n",
+        )
+        assert k8s.create_cluster("dev") is True
+        assert fake_runner.ran(
+            "podman",
+            "--url",
+            sock,
+            "network",
+            "connect",
+            "--ip",
+            "10.89.0.20",
+            "k3d-dev",
+            "k3d-dev-server-0",
+        )
+
     def test_create_cluster_retries(
         self,
         monkeypatch: pytest.MonkeyPatch,

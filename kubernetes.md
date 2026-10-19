@@ -72,6 +72,21 @@ flowchart TB
 | `uv run python -m dotfiles --only krew` | Installs the `access-matrix` and `rbac-tool` kubectl plugins. |
 | `uv run python -c 'from dotfiles.services import k8s; k8s.create_cluster()'` | Network, registry, cluster. |
 | `uv run python -c 'from dotfiles.services import k8s; k8s.delete_cluster()'` | Cluster only; network and registry stay. |
+| `kube-up` | Starts the registry and the cluster, then lists nodes. |
+| `kube-down` | Stops the cluster and the registry. Nothing starts at boot. |
+
+> [!NOTE]
+> The k3d containers use `unless-stopped`, so a reboot with the cluster up brings
+> back `server-0` alone and the API is unreachable. `kube-up` fixes it, and
+> `kube-down` before a reboot keeps everything off.
+
+> [!IMPORTANT]
+> etcd records `server-0`'s IP as its peer URL, but Podman gives it a new one on
+> boot and k3s then won't start ("not a member of the etcd cluster").
+> `create_cluster()` pins the IP it got. For an older cluster:
+> `kpodman stop k3d-dev-server-0`, `kpodman network disconnect k3d-dev k3d-dev-server-0`,
+> `kpodman network connect --ip <old IP> k3d-dev k3d-dev-server-0`. The old IP is
+> in the server's "Found [...]" log line.
 
 Then switch to `kube_local` and run `./overlays/local/bootstrap.sh`.
 

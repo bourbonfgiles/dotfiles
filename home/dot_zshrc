@@ -134,6 +134,31 @@ elif [[ -S /run/podman/podman.sock ]]; then
 fi
 
 ################################################################################
+# k3d cluster on demand: kube-up / kube-down (never started at boot)
+################################################################################
+kube-up() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    podman machine start podman-machine-default 2>/dev/null
+    local sock="$(podman machine inspect podman-machine-default \
+      | sed -n 's/.*"Path" *: *"\(.*api.sock\)".*/\1/p' | head -1)"
+    export DOCKER_HOST="unix://$sock"
+  fi
+  podman --url "$DOCKER_HOST" start k3d-registry.localhost >/dev/null
+  # k3d's wait on the server's logs can fail under Podman's journald driver
+  local i
+  for i in 1 2 3; do
+    k3d cluster start dev && break
+    sleep 5
+  done
+  kubectl --context k3d-dev get nodes
+}
+
+kube-down() {
+  k3d cluster stop dev
+  podman --url "$DOCKER_HOST" stop k3d-registry.localhost >/dev/null
+}
+
+################################################################################
 # Secrets (not tracked in git)
 ################################################################################
 [[ -f "$HOME/.zshrc.secrets" ]] && source "$HOME/.zshrc.secrets"
