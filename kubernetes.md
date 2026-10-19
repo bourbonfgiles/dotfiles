@@ -81,12 +81,15 @@ flowchart TB
 > `kube-down` before a reboot keeps everything off.
 
 > [!IMPORTANT]
-> etcd records `server-0`'s IP as its peer URL, but Podman gives it a new one on
-> boot and k3s then won't start ("not a member of the etcd cluster").
-> `create_cluster()` pins the IP it got. For an older cluster:
-> `kpodman stop k3d-dev-server-0`, `kpodman network disconnect k3d-dev k3d-dev-server-0`,
-> `kpodman network connect --ip <old IP> k3d-dev k3d-dev-server-0`. The old IP is
-> in the server's "Found [...]" log line.
+> Podman gives every node a new IP on each start. etcd records `server-0`'s IP
+> as its peer URL, so k3s then won't start ("not a member of the etcd cluster"),
+> and Cilium keeps tunnelling to the agents' old IPs, so cross-node pod traffic
+> (DNS included) times out. `create_cluster()` pins the IPs the nodes got. For an
+> older cluster, per node: `kpodman stop <node>`,
+> `kpodman network disconnect k3d-dev <node>`,
+> `kpodman network connect --ip <IP> k3d-dev <node>`, `kpodman start <node>`.
+> Use the server's old IP from its "Found [...]" log line. If agents moved, pin
+> them where they are and run `kubectl --context k3d-dev -n kube-system rollout restart ds/cilium`.
 
 Then switch to `kube_local` and run `./overlays/local/bootstrap.sh`.
 
