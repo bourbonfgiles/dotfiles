@@ -177,7 +177,7 @@ class TestK8s:
             "k3d", "cluster", "create", "dev", "--config", str(config)
         )
 
-    def test_create_cluster_pins_server_ip(
+    def test_create_cluster_pins_node_ips(
         self,
         monkeypatch: pytest.MonkeyPatch,
         fake_runner: FakeRunner,
@@ -192,21 +192,22 @@ class TestK8s:
         monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
         sock = "unix:///run/podman/podman.sock"
         fake_runner.script(
+            ["podman", "--url", sock, "ps"],
+            stdout="k3d-dev-server-0\nk3d-dev-agent-0\nk3d-dev-serverlb\n",
+        )
+        fake_runner.script(
             ["podman", "--url", sock, "inspect", "k3d-dev-server-0"],
             stdout="10.89.0.20\n",
         )
-        assert k8s.create_cluster("dev") is True
-        assert fake_runner.ran(
-            "podman",
-            "--url",
-            sock,
-            "network",
-            "connect",
-            "--ip",
-            "10.89.0.20",
-            "k3d-dev",
-            "k3d-dev-server-0",
+        fake_runner.script(
+            ["podman", "--url", sock, "inspect", "k3d-dev-agent-0"],
+            stdout="10.89.0.21\n",
         )
+        assert k8s.create_cluster("dev") is True
+        connect = ["podman", "--url", sock, "network", "connect", "--ip"]
+        assert fake_runner.ran(*connect, "10.89.0.20", "k3d-dev", "k3d-dev-server-0")
+        assert fake_runner.ran(*connect, "10.89.0.21", "k3d-dev", "k3d-dev-agent-0")
+        assert not fake_runner.ran("podman", "--url", sock, "stop", "k3d-dev-serverlb")
 
     def test_create_cluster_retries(
         self,
