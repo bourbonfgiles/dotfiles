@@ -1,2 +1,6 @@
 [Context]
 filesystems=home
+
+# Homebrew last, so LazyVim finds lazygit and friends behind the bundled nvim.
+[Environment]
+PATH=/app/bin:/usr/bin:/home/linuxbrew/.linuxbrew/bin

@@ -1,6 +1,6 @@
 # No custom theme: let Ghostty use its built-in default. Match against the
 # editor's active colorscheme by hand if you want them aligned.
-font-size = 14
+font-size = 10
 
 # Nudge dim/low-contrast ANSI colours until they're legible against the
 # background, without flattening the palette (1.0 = no adjustment).
