@@ -1,7 +1,7 @@
 -- Neovide specific configuration
 if vim.g.neovide then
   -- Font size
-  vim.o.guifont = "JetBrainsMono Nerd Font:h14"
+  vim.o.guifont = "JetBrainsMono Nerd Font:h10"
 
   -- Window blur
   vim.g.neovide_window_blurred = true
