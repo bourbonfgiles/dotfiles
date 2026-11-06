@@ -79,6 +79,39 @@ def _install_dropins(settings: Settings) -> None:
             )
 
 
+def _ignore_lan_dns() -> None:
+    """Stop wired profiles taking DHCP's resolvers.
+
+    NetworkManager gives the default-route link `~.`, so resolved would send
+    every lookup to the router in plain text alongside Cloudflare. Wi-Fi keeps
+    them for captive portals.
+    """
+    out = shell.capture(["nmcli", "-t", "-f", "UUID,TYPE,DEVICE", "connection", "show"])
+    for line in out.splitlines():
+        uuid_, kind, device = line.split(":", 2)
+        if kind != "802-3-ethernet":
+            continue
+        shell.run(
+            [
+                "sudo",
+                "nmcli",
+                "connection",
+                "modify",
+                uuid_,
+                "ipv4.ignore-auto-dns",
+                "yes",
+                "ipv6.ignore-auto-dns",
+                "yes",
+            ],
+            check=False,
+        )
+        if device:
+            shell.run(["sudo", "nmcli", "device", "reapply", device], check=False)
+            # NetworkManager pushes nothing when it has no DNS, so resolved
+            # would keep the router's servers from before.
+            shell.run(["sudo", "resolvectl", "revert", device], check=False)
+
+
 def _linux_resolved(settings: Settings) -> None:
     """Point systemd-resolved at Cloudflare DNS over TLS via drop-in files."""
     logger.info("Configuring systemd-resolved for DNS over TLS…")
@@ -97,6 +130,7 @@ def _linux_resolved(settings: Settings) -> None:
     shell.run(["sudo", "systemctl", "enable", "systemd-resolved"], check=False)
     if shell.command_exists("nmcli"):
         shell.run(["sudo", "systemctl", "restart", "NetworkManager"], check=False)
+        _ignore_lan_dns()
     logger.info("Linux DNS over TLS configured (Cloudflare 1.1.1.1 drop-ins).")
 
 
