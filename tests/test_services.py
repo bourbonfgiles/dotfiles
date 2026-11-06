@@ -7,11 +7,38 @@ from pathlib import Path
 import pytest
 
 from dotfiles.config.settings import Settings
-from dotfiles.services import bpf, chezmoi_apply, flatpak, homebrew, k8s, krew
+from dotfiles.services import bpf, chezmoi_apply, dns, flatpak, homebrew, k8s, krew
 from dotfiles.utils import platform, shell
 from dotfiles.utils.exceptions import StepError
 from dotfiles.utils.platform import OSKind
 from tests.conftest import FakeRunner
+
+
+class TestDns:
+    def test_wired_profiles_ignore_dhcp_resolvers(
+        self, fake_runner: FakeRunner
+    ) -> None:
+        fake_runner.script(
+            ["nmcli", "-t", "-f", "UUID,TYPE,DEVICE", "connection", "show"],
+            stdout="aaa:802-3-ethernet:enp5s0\nbbb:802-11-wireless:\nccc:802-3-ethernet:\n",
+        )
+        dns._ignore_lan_dns()
+        for uuid_ in ("aaa", "ccc"):
+            assert fake_runner.ran(
+                "sudo",
+                "nmcli",
+                "connection",
+                "modify",
+                uuid_,
+                "ipv4.ignore-auto-dns",
+                "yes",
+                "ipv6.ignore-auto-dns",
+                "yes",
+            )
+        assert not fake_runner.ran("sudo", "nmcli", "connection", "modify", "bbb")
+        assert fake_runner.ran("sudo", "nmcli", "device", "reapply", "enp5s0")
+        assert fake_runner.ran("sudo", "resolvectl", "revert", "enp5s0")
+        assert not fake_runner.ran("sudo", "nmcli", "device", "reapply", "")
 
 
 class TestFlatpak:
