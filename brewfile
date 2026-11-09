@@ -141,7 +141,6 @@ if OS.mac?
   cask "signal"
   cask "slack"
   cask "spotify"
-  cask "warp"
   cask "zed"
   cask "zen"
   cask "zoom"

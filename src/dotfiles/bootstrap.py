@@ -24,7 +24,6 @@ from .services import (
     krew,
     neovim,
     shell_default,
-    warp,
 )
 from .utils import shell
 from .utils.exceptions import DotfilesError
@@ -50,7 +49,6 @@ STEPS: tuple[Step, ...] = (
     Step("chezmoi", chezmoi_apply.run, critical=True),
     Step("flatpak", flatpak.run),
     Step("ghostty", ghostty.run),
-    Step("warp", warp.run),
     Step("albert", albert.run),
     Step("gaming", gaming.run),
     Step("k8s", k8s.run),
