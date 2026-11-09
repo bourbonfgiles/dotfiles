@@ -52,6 +52,11 @@ files:
     nodeFilters:
       - server:*
       - agent:*
+# k3d's entrypoint uncordons and drains the node named $HOSTNAME; match --node-name.
+env:
+  - envVar: HOSTNAME=controlplane
+    nodeFilters:
+      - server:0
 options:
   k3d:
     disableLoadbalancer: false
