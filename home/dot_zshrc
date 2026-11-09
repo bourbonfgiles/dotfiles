@@ -9,6 +9,14 @@ HISTORY_IGNORE='(cps*|cpe*|history|ll|ls|z|exit|k9s)'
 setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 
 ################################################################################
+# Keys
+################################################################################
+# zsh binds none of these, so Delete prints "~". Both cursor-key modes are covered.
+bindkey '^[[3~' delete-char
+bindkey '^[[H' beginning-of-line '^[OH' beginning-of-line
+bindkey '^[[F' end-of-line '^[OF' end-of-line
+
+################################################################################
 # Homebrew PATH (macOS + Linux)
 # Ensure brewed tools are on PATH across shells (official shellenv method).     #
 ################################################################################
