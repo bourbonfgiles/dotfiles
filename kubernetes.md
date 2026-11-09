@@ -115,6 +115,8 @@ Cluster shape (`home/dot_config/k3d/config.yaml`)
 - Node names as on EKS: workers get resource-based EC2 names
   (`i-0a1b2c3d4e5f60001.eu-west-2.compute.internal`), the server `controlplane`.
   Containers keep k3d's names (`k3d-dev-agent-0`), so `kpodman` shows those.
+  The server container's `HOSTNAME` is `controlplane` too, because k3d's
+  entrypoint uncordons and drains the node named after it.
 - k3s 1.36, a minor EKS still supports.
 - API server bound to `127.0.0.1`. Ports 25565 and 30001-30004 are mapped to the
   host and reachable from the LAN.
