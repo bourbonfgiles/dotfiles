@@ -1,0 +1,9 @@
+{{- $brewfile := joinPath .chezmoi.workingTree "brewfile" -}}
+#!/bin/sh
+# Re-runs when the brewfile changes: {{ include $brewfile | sha256sum }}
+set -eu
+
+brewfile={{ $brewfile | quote }}
+# Homebrew won't load third-party taps until they're trusted.
+sed -n 's/^tap "\(.*\)"/\1/p' "$brewfile" | xargs brew trust
+brew bundle --file="$brewfile"

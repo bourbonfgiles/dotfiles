@@ -1,6 +1,0 @@
-# Work machine: copy to ~/.config/chezmoi/chezmoi.toml (never commit), then apply.
-# Used for repos under ~/repos/vitalhub/ only.
-
-[data.git.work]
-name = "Your Name"
-email = "you@company.com"

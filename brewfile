@@ -1,12 +1,10 @@
 ################################################################################
-# Brewfile - organized per OS.
+# Brewfile - organized per OS. Applied by chezmoi whenever it changes.
 #
 #   Sections:  1) SHARED CLI    2) macOS only    3) Linux only
 #
-#   Linux GUI apps, gaming, and Ghostty are handled outside brew bundle:
-#     flatpaks         -> src/dotfiles/services/flatpak.py
-#     flatpaks-gaming  -> src/dotfiles/services/gaming.py
-#     ghostty          -> src/dotfiles/services/ghostty.py
+#   Linux GUI apps are Flatpaks (flatpaks, flatpaks-gaming); Ghostty and Albert
+#   are in the os_build image.
 ################################################################################
 
 
@@ -78,7 +76,6 @@ brew "iann0036/iamlive/iamlive"
 brew "azure-cli"
 brew "azure/kubelogin/kubelogin"
 brew "powershell"
-brew "uv"
 
 # Linters & formatters
 brew "ruff"

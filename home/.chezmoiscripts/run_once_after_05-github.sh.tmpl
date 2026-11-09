@@ -1,0 +1,17 @@
+#!/bin/sh
+# An SSH key for GitHub, then the repos that go with this one.
+set -eu
+
+key="$HOME/.ssh/id_ed25519"
+if [ ! -f "$key" ]; then
+  mkdir -p -m 700 "$HOME/.ssh"
+  ssh-keygen -t ed25519 -C {{ .git.email | quote }} -f "$key"
+  echo "Add this key to https://github.com/settings/keys:"
+  cat "$key.pub"
+  printf 'Press Enter once it is added. '
+  read -r _ </dev/tty
+fi
+
+repos="$HOME/repos/personal"
+git -C {{ .chezmoi.workingTree | quote }} remote set-url origin git@github.com:bourbonfgiles/dotfiles.git
+[ -d "$repos/kube_local/.git" ] || git clone git@github.com:bourbonfgiles/kube_local.git "$repos/kube_local"

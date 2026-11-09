@@ -1,0 +1,12 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+# k3d's Podman machine. Rootless leaves the agents stuck in "Created", and the
+# control plane, Cilium and a JVM game server need 8 GB. Linux uses the image's
+# rootful socket instead.
+set -eu
+m=podman-machine-default
+podman machine inspect "$m" >/dev/null 2>&1 || podman machine init --provider applehv "$m"
+podman machine stop "$m" 2>/dev/null || true
+podman machine set --rootful --memory 8192 "$m"
+podman machine start "$m"
+{{ end -}}
