@@ -56,8 +56,8 @@ flowchart TB
     registry["k3d-registry.localhost<br/>host port 5050"]
     subgraph net["Network k3d-dev, bridge k3d0"]
       lb["k3d-dev-serverlb<br/>6443 on 127.0.0.1<br/>25565, 30001-30004"]
-      server["server-0<br/>etcd, tainted"]
-      agents["agent-0/1/2<br/>eu-west-2a/b/c"]
+      server["server-0: controlplane<br/>etcd, tainted"]
+      agents["agent-0/1/2: i-0a1b2c3d4e5f6000N<br/>eu-west-2a/b/c"]
     end
   end
   socket --> podman
@@ -112,6 +112,9 @@ Cluster shape (`home/dot_config/k3d/config.yaml`)
 - 1 server + 3 agents, server tainted `NoSchedule`, embedded etcd: workloads see
   only worker nodes, as on EKS.
 - EKS-style region, zone, instance-type and nodegroup labels on the agents.
+- Node names as on EKS: workers get resource-based EC2 names
+  (`i-0a1b2c3d4e5f60001.eu-west-2.compute.internal`), the server `controlplane`.
+  Containers keep k3d's names (`k3d-dev-agent-0`), so `kpodman` shows those.
 - k3s 1.36, a minor EKS still supports.
 - API server bound to `127.0.0.1`. Ports 25565 and 30001-30004 are mapped to the
   host and reachable from the LAN.
