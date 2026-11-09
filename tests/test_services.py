@@ -7,10 +7,9 @@ from pathlib import Path
 import pytest
 
 from dotfiles.config.settings import Settings
-from dotfiles.services import bpf, chezmoi_apply, dns, flatpak, homebrew, k8s, krew
+from dotfiles.services import chezmoi_apply, dns, flatpak, homebrew, k8s, krew
 from dotfiles.utils import platform, shell
 from dotfiles.utils.exceptions import StepError
-from dotfiles.utils.platform import OSKind
 from tests.conftest import FakeRunner
 
 
@@ -411,29 +410,3 @@ class TestKrew:
         )
         krew.run(settings)
         assert not fake_runner.ran("kubectl", "krew", "update")
-
-
-class TestBpf:
-    def test_noop_on_mac(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_runner: FakeRunner,
-        settings: Settings,
-    ) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.MAC)
-        bpf.run(settings)
-        assert fake_runner.calls == []
-
-    def test_layers_all_packages_on_atomic_fedora(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_runner: FakeRunner,
-        settings: Settings,
-    ) -> None:
-        monkeypatch.setattr(platform, "os_kind", lambda: OSKind.BAZZITE)
-        fake_runner.script(["rpm", "-q"], returncode=1)
-        bpf.run(settings)
-        for package in ("bpftrace", "bcc-tools", "bpftool", "perf"):
-            assert fake_runner.ran(
-                "sudo", "rpm-ostree", "install", "--idempotent", package
-            )

@@ -11,11 +11,10 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Home files → chezmoi** (`home/` source state via `.chezmoiroot`).
 - **CLI tools → Homebrew** (`brewfile`), shared across targets with small per-OS sections.
 - **GUI apps → Homebrew Casks on macOS, native Flatpak on Linux** (`flatpaks`).
-- **Ghostty** → Homebrew cask on macOS; `scottames/ghostty` COPR layered with `rpm-ostree` on atomic Fedora.
+- **Ghostty, Albert, BPF tools** → Homebrew cask (Ghostty) on macOS; built into the OS image on Linux, never layered.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
 - **Containers** → Apple `container` and brew Podman on macOS; the OS's own `podman` on Linux. k3d uses rootful Podman on both.
 - **Local Kubernetes** → a 4-node k3d cluster on rootful Podman, empty until the `kube_local` repo bootstraps it. See [kubernetes.md](kubernetes.md).
-- **BPF tracing** → `bpftrace`, the BCC tools, `bpftool` and `perf` layered with `rpm-ostree` on Linux (for the BPF Performance Tools book); not available on macOS.
 - **kubectl plugins** → the `krew` step installs `access-matrix` and `rbac-tool` for reading RBAC from the terminal.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`, no suspend on AC (the KVM keyboard dies after resume); Hammerspoon on macOS.
 
@@ -28,7 +27,7 @@ git clone git@github.com:bourbonfgiles/dotfiles.git ~/repos/personal/dotfiles
 sh ~/repos/personal/dotfiles/bootstrap.sh
 ```
 
-`bootstrap.sh` ensures Homebrew + uv, then `uv run python -m dotfiles` runs ordered steps: brew bundle, git/ssh, **chezmoi apply**, Linux GUI/layering, Kubernetes runtime, krew plugins, BPF tools, shell, DNS drop-ins, GNOME, fonts, neovim, checks.
+`bootstrap.sh` ensures Homebrew + uv, then `uv run python -m dotfiles` runs ordered steps: brew bundle, git/ssh, **chezmoi apply**, Linux Flatpaks and gaming, Kubernetes runtime, krew plugins, shell, DNS drop-ins, GNOME, fonts, neovim, checks.
 
 ```bash
 uv run python -m dotfiles --list
@@ -45,9 +44,9 @@ flowchart TD
   S[bootstrap.sh: ensure brew + uv] --> M[uv run python -m dotfiles]
   M --> H["homebrew (brew bundle)"] --> G[git_ssh] --> C[chezmoi apply]
   C --> D{OS?}
-  D -->|Linux| E[flatpak → ghostty → albert → gaming]
+  D -->|Linux| E[flatpak → gaming]
   D -->|macOS| X[Casks cover GUI and Ghostty]
-  E --> K["k8s → krew → bpf (Linux only)"]
+  E --> K["k8s → krew (Linux only)"]
   X --> K
   K --> Z[shell_default → dns → gnome → fonts → neovim → checks]
 ```
@@ -92,7 +91,7 @@ tests/
 ## Notes (Bazzite / Silverblue)
 
 - chezmoi only writes `$HOME` — install via Homebrew.
-- Ghostty and Albert still need `rpm-ostree` + reboot.
+- Nothing is layered with `rpm-ostree`: packages belong in the OS image.
 - DNS uses `system/resolved.conf.d/*` drop-ins (not a full rewrite of resolved.conf).
 - Neovim config is chezmoi-managed; the neovim step only syncs plugins. lazy.nvim's luarocks support is off (its Lua build needs readline headers Bazzite lacks); plugins that ship rockspecs get their dependencies as ordinary plugins instead.
 

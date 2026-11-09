@@ -48,7 +48,6 @@ flowchart TB
     logs["containers.conf.d<br/>k8s-file log driver"]
     nm["NetworkManager<br/>no DoT to the router"]
     unit["dotfiles-kube-dns.service<br/>resolvectl on k3d0"]
-    bpf["bpftrace, BCC, bpftool, perf"]
   end
   subgraph podman["Rootful Podman"]
     registry["k3d-registry.localhost<br/>host port 5050"]
@@ -68,7 +67,6 @@ flowchart TB
 | Command | Does |
 | --- | --- |
 | `uv run python -m dotfiles --only k8s` | Socket, logging, host DNS unit. One sudo prompt. |
-| `uv run python -m dotfiles --only bpf` | Layers `bpftrace`, `bcc-tools`, `bpftool` and `perf`; reboot after. |
 | `uv run python -m dotfiles --only krew` | Installs the `access-matrix` and `rbac-tool` kubectl plugins. |
 | `uv run python -c 'from dotfiles.services import k8s; k8s.create_cluster()'` | Network, registry, cluster. |
 | `uv run python -c 'from dotfiles.services import k8s; k8s.delete_cluster()'` | Cluster only; network and registry stay. |
@@ -136,7 +134,7 @@ Tooling
   krew's `access-matrix` and `rbac-tool` for RBAC.
 - The starship prompt shows the context: green for `k3d-*`, red for anything
   else, EKS ARNs shortened to `eks:<cluster>`.
-- `bpf` step for the BPF Performance Tools book.
+- BPF tools for the BPF Performance Tools book come from the OS image.
 
 On macOS the cluster runs inside a rootful `applehv` Podman machine, so the
 `10.89.0.x` addresses and host DNS rule don't apply; use `kubectl port-forward`.
