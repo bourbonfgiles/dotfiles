@@ -13,15 +13,9 @@ logger = get_logger("albert")
 
 _OBS_BASE = "https://download.opensuse.org/repositories/home:/manuelschneid3r"
 _REPO_FILE = "/etc/yum.repos.d/home:manuelschneid3r.repo"
-
-
-def _obs_target() -> str:
-    """Map the running Fedora to an OBS build target (Rawhide for 44+)."""
-    try:
-        version = int(system.fedora_version_id())
-    except ValueError:
-        version = 40
-    return "Fedora_Rawhide" if version >= 44 else f"Fedora_{version}"
+# $releasever is resolved from the image being deployed, so the repo follows
+# Fedora upgrades. Never Rawhide: its builds need a newer Qt than the release has.
+_BASE = f"{_OBS_BASE}/Fedora_$releasever/"
 
 
 def _repo_body(base: str) -> str:
@@ -58,17 +52,13 @@ def run(settings: Settings) -> None:
         return
     ensure_podman_docker()
     kind = platform.os_kind()
-    target = _obs_target()
-    base = f"{_OBS_BASE}/{target}/"
     if kind in (OSKind.BAZZITE, OSKind.FEDORA_ATOMIC):
-        system.ensure_repo_file(
-            _REPO_FILE, _repo_body(base), label=f"Albert ({target})"
-        )
+        system.ensure_repo_file(_REPO_FILE, _repo_body(_BASE), label="Albert")
         system.rpmostree_install_or_migrate("albert", label="Albert")
         return
     if shell.command_exists("dnf"):
         if not Path(_REPO_FILE).exists():
-            system.sudo_write(_REPO_FILE, _repo_body(base))
+            system.sudo_write(_REPO_FILE, _repo_body(_BASE))
         shell.run(["sudo", "dnf", "-y", "install", "albert"], check=False)
     else:
         logger.warning(
