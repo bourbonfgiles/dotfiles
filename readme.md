@@ -1,17 +1,13 @@
 # Dotfiles
 
-Reproducible setup for three targets that share one bootstrap and the same tooling:
-
-- **macOS**
-- **Bazzite** (atomic Fedora, gaming built in)
-- **Fedora Silverblue** (atomic Fedora)
+One chezmoi setup for macOS, Bazzite and Fedora Silverblue.
 
 ## Model
 
 - **Home files → chezmoi** (`home/` source state via `.chezmoiroot`).
 - **CLI tools → Homebrew** (`brewfile`), shared across targets with small per-OS sections.
 - **GUI apps → Homebrew Casks on macOS, native Flatpak on Linux** (`flatpaks`).
-- **Ghostty, Albert, BPF tools** → Homebrew cask (Ghostty) on macOS; built into the OS image on Linux, never layered.
+- **Ghostty, Albert, BPF tools** → Homebrew cask (Ghostty) on macOS; the os_build image on Linux.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue.
 - **Containers** → Apple `container` and brew Podman on macOS; the OS's own `podman` on Linux. k3d uses rootful Podman on both.
 - **Local Kubernetes** → a 4-node k3d cluster on rootful Podman, empty until the `kube_local` repo bootstraps it. See [kubernetes.md](kubernetes.md).
@@ -37,9 +33,7 @@ chezmoi apply
 
 ## Setup scripts
 
-chezmoi runs `home/.chezmoiscripts/` after writing files, in name order. `run_once_` scripts run once per
-machine; `run_onchange_` ones run again when their content, or the file whose hash they embed, changes.
-A script that renders empty for the current OS is skipped.
+`home/.chezmoiscripts/`, in name order after files are written.
 
 | Script | OS | Does | Runs again when |
 | --- | --- | --- | --- |
@@ -88,7 +82,6 @@ bootstrap.sh          Fresh-machine entry
 ## Notes (Bazzite / Silverblue)
 
 - chezmoi only writes `$HOME` — install via Homebrew.
-- Nothing is layered with `rpm-ostree`: packages belong in the OS image.
 - Plain Silverblue lacks what the os_build image adds (DNS over TLS, the k3d socket); rebase onto it or add them by hand.
 - Neovim config is chezmoi-managed; `60-neovim` only restores plugins. Neovide's Flatpak sandbox links to `~/.config/nvim`. lazy.nvim's luarocks support is off (its Lua build needs readline headers Bazzite lacks); plugins that ship rockspecs get their dependencies as ordinary plugins instead.
 

@@ -6,7 +6,6 @@
 set -eu
 command -v gnome-extensions >/dev/null || exit 0
 
-# The os_build image ships these; on plain Silverblue install them from extensions.gnome.org.
 gsettings set org.gnome.shell disable-user-extensions false
 for ext in dash-to-dock@micxgx.gmail.com tilingshell@ferrarodomenico.com steal-my-focus-window@steal-my-focus-window; do
   gnome-extensions enable "$ext" || echo "GNOME extension $ext is not installed" >&2

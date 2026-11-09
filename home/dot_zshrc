@@ -130,7 +130,7 @@ kube-create() {
   local name="${1:-dev}" i node ip
   _kube_docker_host || return 1
   local p=(podman --url "$DOCKER_HOST")
-  # Fixed subnet and bridge: kube_local's LB pool and kube.internal DNS depend on them.
+  # Fixed subnet and bridge.
   if "${p[@]}" network exists k3d-dev; then
     [[ "$("${p[@]}" network inspect k3d-dev --format '{{.NetworkInterface}}')" == k3d0 ]] ||
       print -u2 "k3d-dev isn't on bridge k3d0, so *.kube.internal won't resolve; delete the cluster and the network"

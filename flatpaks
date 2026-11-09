@@ -1,6 +1,3 @@
-# Flathub apps on every Linux target. Gaming is in flatpaks-gaming; Ghostty,
-# Albert and the BPF tools are in the OS image.
-
 # Browsers
 app.zen_browser.zen
 
