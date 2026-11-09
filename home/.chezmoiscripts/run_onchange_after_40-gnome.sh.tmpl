@@ -1,0 +1,45 @@
+{{- if eq .chezmoi.os "linux" -}}
+{{- $dconf := joinPath .chezmoi.workingTree "dconf" -}}
+#!/bin/sh
+# Re-runs when the dconf files change:
+{{- range list "dash-to-dock" "tilingshell" }} {{ joinPath $dconf (print . ".conf") | include | sha256sum | trunc 12 }}{{ end }}
+set -eu
+command -v gnome-extensions >/dev/null || exit 0
+
+# The os_build image ships these; on plain Silverblue install them from extensions.gnome.org.
+gsettings set org.gnome.shell disable-user-extensions false
+for ext in dash-to-dock@micxgx.gmail.com tilingshell@ferrarodomenico.com steal-my-focus-window@steal-my-focus-window; do
+  gnome-extensions enable "$ext" || echo "GNOME extension $ext is not installed" >&2
+done
+dconf load /org/gnome/shell/extensions/dash-to-dock/ < {{ joinPath $dconf "dash-to-dock.conf" | quote }}
+dconf load /org/gnome/shell/extensions/tilingshell/ < {{ joinPath $dconf "tilingshell.conf" | quote }}
+
+# Free Super+Up/Down for Tiling Shell.
+dconf write /org/gnome/desktop/wm/keybindings/maximize '@as []'
+dconf write /org/gnome/desktop/wm/keybindings/unmaximize '@as []'
+
+# Albert on Super+Space, which GNOME otherwise uses to switch input source.
+if command -v albert >/dev/null; then
+  gsettings set org.gnome.desktop.wm.keybindings switch-input-source '[]'
+  gsettings set org.gnome.desktop.wm.keybindings switch-input-source-backward '[]'
+  keys=org.gnome.settings-daemon.plugins.media-keys
+  kb=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/albert/
+  current=$(gsettings get $keys custom-keybindings)
+  case $current in
+    *"$kb"*) ;;
+    *"[]") gsettings set $keys custom-keybindings "['$kb']" ;;
+    *) gsettings set $keys custom-keybindings "${current%]}, '$kb']" ;;
+  esac
+  dconf write "${kb}name" "'Albert'"
+  dconf write "${kb}command" "'albert toggle'"
+  dconf write "${kb}binding" "'<Super>space'"
+fi
+
+# Fast key repeat (StarCraft II).
+gsettings set org.gnome.desktop.peripherals.keyboard repeat true
+gsettings set org.gnome.desktop.peripherals.keyboard delay 200
+gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 8
+
+# Never suspend on AC: the keyboard behind the monitor's KVM is dead after resume.
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+{{ end -}}

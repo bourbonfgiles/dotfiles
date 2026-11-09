@@ -1,0 +1,11 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/sh
+# macOS gets its Nerd Fonts from brew casks.
+set -eu
+fc-list | grep -qi 'JetBrainsMono Nerd Font' && exit 0
+
+dir="$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+mkdir -p "$dir"
+curl -fsSL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz | tar -xJ -C "$dir"
+fc-cache -f
+{{ end -}}

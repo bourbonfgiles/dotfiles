@@ -1,0 +1,8 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/sh
+# Homebrew's zsh as the login shell. macOS already uses zsh.
+set -eu
+zsh=$(command -v zsh)
+grep -qx "$zsh" /etc/shells || echo "$zsh" | sudo tee -a /etc/shells >/dev/null
+[ "$(getent passwd "$(id -un)" | cut -d: -f7)" = "$zsh" ] || chsh -s "$zsh"
+{{ end -}}

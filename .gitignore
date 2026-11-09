@@ -29,16 +29,6 @@ temp/
 # Large binaries / AppImages (not dotfiles)
 *.AppImage
 
-# Python
-__pycache__/
-*.py[cod]
-.ruff_cache/
-.mypy_cache/
-.pytest_cache/
-*.egg-info/
-.venv/
-uv.lock
-
 # Albert rewrites its own config dir at runtime; track only the config file
 /home/dot_config/albert/*
 !/home/dot_config/albert/config

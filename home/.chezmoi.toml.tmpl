@@ -1,0 +1,8 @@
+sourceDir = {{ .chezmoi.workingTree | quote }}
+{{- /* A work machine's identity is added here by hand; init keeps it. */ -}}
+{{- with dig "git" "work" "" . }}
+
+[data.git.work]
+name = {{ .name | quote }}
+email = {{ .email | quote }}
+{{- end }}

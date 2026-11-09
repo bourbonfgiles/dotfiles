@@ -44,15 +44,15 @@ sides together:
 | flannel, kube-proxy, servicelb, traefik, network policy off | k3s args | Cilium replaces all of them |
 | Registry `k3d-registry.localhost:5000` | `kube-create` | image references, Flux image automation |
 
-## What dotfiles sets up
+## What dotfiles and the image set up
 
 ```mermaid
 flowchart TB
-  subgraph host["Host (Linux)"]
+  subgraph host["Host (Linux, os_build image)"]
     socket["podman.socket<br/>rootful, group wheel"]
     logs["containers.conf.d<br/>k8s-file log driver"]
-    nm["NetworkManager<br/>no DoT to the router"]
-    unit["dotfiles-kube-dns.service<br/>resolvectl on k3d0"]
+    nm["NetworkManager<br/>router DNS ignored (80-dns)"]
+    unit["kube-internal-dns.service<br/>resolvectl on k3d0"]
   end
   subgraph podman["Rootful Podman"]
     registry["k3d-registry.localhost<br/>host port 5050"]
@@ -71,8 +71,8 @@ flowchart TB
 
 | Command | Does |
 | --- | --- |
-| `uv run python -m dotfiles --only k8s` | Checks the socket (Linux) or makes the Podman machine rootful with 8 GB (macOS). |
-| `uv run python -m dotfiles --only krew` | Installs the `access-matrix` and `rbac-tool` kubectl plugins. |
+| `90-podman-machine` (chezmoi, macOS) | Makes the Podman machine rootful with 8 GB. Linux uses the image's socket. |
+| `30-krew` (chezmoi) | Installs the `access-matrix` and `rbac-tool` kubectl plugins. |
 | `kube-create` | Network, registry, cluster, then pins the node IPs. |
 | `kube-delete` | Cluster only; network and registry stay. |
 | `kube-up` | Starts the registry and the cluster, then lists nodes. |
@@ -124,8 +124,10 @@ Network and DNS
 - A fixed network so LB IPs and the DNS route never move.
 - Kubelet gets its own `resolv.conf`. Otherwise pods inherited the host's
   `fritz.box` search domain and every external lookup stalled first.
-- DNS-over-TLS stays on globally but is off for the router's resolvers. The
-  FRITZ!Box only speaks DoT upstream, not to LAN clients.
+- DNS-over-TLS everywhere: the host, rootless and rootful containers (the
+  image turns on DNS for the default `podman` network, so aardvark-dns forwards
+  to resolved) and pods. Wired connections ignore the FRITZ!Box, which only
+  speaks plain DNS to LAN clients.
 - `*.kube.internal` goes to `10.89.0.250` over `k3d0` only, without DoT or
   DNSSEC. Nothing answers until kube_local starts BIND.
 

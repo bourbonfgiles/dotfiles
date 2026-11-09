@@ -1,0 +1,17 @@
+{{- if eq .chezmoi.os "linux" -}}
+{{- $lists := list (joinPath .chezmoi.workingTree "flatpaks") -}}
+{{- if ne .chezmoi.osRelease.id "bazzite" -}}
+{{-   $lists = append $lists (joinPath .chezmoi.workingTree "flatpaks-gaming") -}}
+{{- end -}}
+#!/bin/sh
+# Re-runs when a list changes:
+{{- range $lists }} {{ include . | sha256sum | trunc 12 }}{{ end }}
+# Bazzite ships the gaming apps, so flatpaks-gaming is for Silverblue only.
+set -eu
+
+flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+for app in $(sed 's/#.*//' {{ range $lists }}{{ . | quote }} {{ end }}); do
+  # Skip system-wide installs too, so nothing gets a second user copy.
+  flatpak info "$app" >/dev/null 2>&1 || flatpak install --user --noninteractive flathub "$app"
+done
+{{ end -}}

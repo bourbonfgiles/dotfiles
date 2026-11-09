@@ -1,0 +1,4 @@
+#!/bin/sh
+# Installs the plugins at lazy-lock.json's versions when it changes: {{ include "dot_config/nvim/lazy-lock.json" | sha256sum | trunc 12 }}
+set -eu
+nvim --headless '+Lazy! restore' +qa

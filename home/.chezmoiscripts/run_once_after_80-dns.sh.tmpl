@@ -1,0 +1,52 @@
+#!/bin/sh
+# DNS over TLS to Cloudflare. On Linux the os_build image configures resolved.
+set -eu
+{{ if eq .chezmoi.os "darwin" -}}
+profile="$(mktemp -d)/Cloudflare-DoT.mobileconfig"
+cat >"$profile" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key><string>TLS</string>
+        <key>ServerName</key><string>one.one.one.one</string>
+        <key>ServerAddresses</key>
+        <array><string>1.1.1.1</string><string>1.0.0.1</string></array>
+      </dict>
+      <key>PayloadType</key><string>com.apple.dnsSettings.managed</string>
+      <key>PayloadIdentifier</key><string>com.bourbonfgiles.dotfiles.dns.payload</string>
+      <key>PayloadUUID</key><string>$(uuidgen)</string>
+      <key>PayloadVersion</key><integer>1</integer>
+      <key>PayloadDisplayName</key><string>Cloudflare DNS over TLS</string>
+    </dict>
+  </array>
+  <key>PayloadDisplayName</key><string>Cloudflare DNS over TLS</string>
+  <key>PayloadIdentifier</key><string>com.bourbonfgiles.dotfiles.dns</string>
+  <key>PayloadType</key><string>Configuration</string>
+  <key>PayloadUUID</key><string>$(uuidgen)</string>
+  <key>PayloadVersion</key><integer>1</integer>
+</dict>
+</plist>
+EOF
+open "$profile"
+echo "Approve 'Cloudflare DNS over TLS' in System Settings > General > Device Management."
+{{ else if eq .chezmoi.os "linux" -}}
+# Wired connections ignore the router's resolvers, which only speak plain DNS.
+# NetworkManager would otherwise route lookups to them alongside Cloudflare.
+# Wi-Fi keeps them for captive portals.
+nmcli -t -f UUID,TYPE,DEVICE connection show | while IFS=: read -r uuid type device; do
+  [ "$type" = 802-3-ethernet ] || continue
+  [ "$(nmcli -g ipv4.ignore-auto-dns,ipv6.ignore-auto-dns connection show "$uuid" | tr '\n' ' ')" = "yes yes " ] && continue
+  sudo nmcli connection modify "$uuid" ipv4.ignore-auto-dns yes ipv6.ignore-auto-dns yes
+  if [ -n "$device" ]; then
+    sudo nmcli device reapply "$device"
+    # NetworkManager pushes no DNS at all now, so resolved would keep the old servers.
+    sudo resolvectl revert "$device"
+  fi
+done
+{{ end -}}
