@@ -1,20 +1,25 @@
 # Local Kubernetes
 
-dotfiles prepares the host and creates an empty k3d cluster. It stops there:
+dotfiles creates an empty k3d cluster; on Linux the host side (rootful Podman
+socket, logging, `kube.internal` DNS) comes from the os_build image. It stops there:
 no CNI, nodes `NotReady`. The `kube_local` repo takes it from there. That split
 means the cluster can be bootstrapped with a different CNI or GitOps tool without
 touching dotfiles.
 
-## How the two repos fit
+## How the repos fit
 
 ```mermaid
 flowchart LR
-  subgraph dotfiles["dotfiles: host + empty cluster"]
-    sock["Rootful Podman socket"] --> net["Network k3d-dev<br/>10.89.0.0/24, bridge k3d0"]
-    net --> reg["Registry<br/>localhost:5050"]
-    net --> k3d["k3d cluster dev<br/>1 server + 3 agents<br/>no CNI"]
+  subgraph os_build["os_build image (Linux)"]
+    sock["Rootful Podman socket"]
     hostdns["Host DNS rule<br/>*.kube.internal to 10.89.0.250"]
   end
+  subgraph dotfiles["dotfiles: empty cluster"]
+    net["Network k3d-dev<br/>10.89.0.0/24, bridge k3d0"]
+    net --> reg["Registry<br/>localhost:5050"]
+    net --> k3d["k3d cluster dev<br/>1 server + 3 agents<br/>no CNI"]
+  end
+  sock --> net
   subgraph kube_local["kube_local: platform"]
     boot["overlays/local/bootstrap.sh"] --> crds["Gateway API CRDs"] --> cilium["Cilium"] --> pool["LB pool<br/>10.89.0.200-250"] --> bind["BIND kube.internal<br/>10.89.0.250"]
   end
@@ -27,17 +32,17 @@ flowchart LR
   flux -->|"pulls"| gh["GitHub kube_local master"]
 ```
 
-The repos don't call each other. They agree on these values, so change both
+The three repos don't call each other. They agree on these values, so change both
 sides together:
 
-| Value | dotfiles | kube_local |
+| Value | dotfiles / os_build | kube_local |
 | --- | --- | --- |
 | Cluster `dev`, context `k3d-dev` | `home/dot_config/k3d/config.yaml` | `bootstrap.sh` default argument |
 | API endpoint `k3d-dev-serverlb:6443` | k3d's load balancer | `k8sServiceHost` in `overlays/local/cilium-values.yaml` |
-| Network `10.89.0.0/24` | `_CLUSTER_SUBNET` in `services/k8s.py` | LB pool in `overlays/local/lb-ipam.yaml` |
-| DNS `10.89.0.250`, zone `kube.internal` | `_KUBE_DNS_SERVER`, `_KUBE_DNS_DOMAIN` | `overlays/local/dns/bind.yaml` |
+| Network `10.89.0.0/24` | `kube-create` in `home/dot_zshrc` | LB pool in `overlays/local/lb-ipam.yaml` |
+| DNS `10.89.0.250`, zone `kube.internal` | os_build `kube-internal-dns.service` | `overlays/local/dns/bind.yaml` |
 | flannel, kube-proxy, servicelb, traefik, network policy off | k3s args | Cilium replaces all of them |
-| Registry `k3d-registry.localhost:5000` | created by `services/k8s.py` | image references, Flux image automation |
+| Registry `k3d-registry.localhost:5000` | `kube-create` | image references, Flux image automation |
 
 ## What dotfiles sets up
 
@@ -66,10 +71,10 @@ flowchart TB
 
 | Command | Does |
 | --- | --- |
-| `uv run python -m dotfiles --only k8s` | Socket, logging, host DNS unit. One sudo prompt. |
+| `uv run python -m dotfiles --only k8s` | Checks the socket (Linux) or makes the Podman machine rootful with 8 GB (macOS). |
 | `uv run python -m dotfiles --only krew` | Installs the `access-matrix` and `rbac-tool` kubectl plugins. |
-| `uv run python -c 'from dotfiles.services import k8s; k8s.create_cluster()'` | Network, registry, cluster. |
-| `uv run python -c 'from dotfiles.services import k8s; k8s.delete_cluster()'` | Cluster only; network and registry stay. |
+| `kube-create` | Network, registry, cluster, then pins the node IPs. |
+| `kube-delete` | Cluster only; network and registry stay. |
 | `kube-up` | Starts the registry and the cluster, then lists nodes. |
 | `kube-down` | Stops the cluster and the registry. Nothing starts at boot. |
 
@@ -82,7 +87,7 @@ flowchart TB
 > Podman gives every node a new IP on each start. etcd records `server-0`'s IP
 > as its peer URL, so k3s then won't start ("not a member of the etcd cluster"),
 > and Cilium keeps tunnelling to the agents' old IPs, so cross-node pod traffic
-> (DNS included) times out. `create_cluster()` pins the IPs the nodes got. For an
+> (DNS included) times out. `kube-create` pins the IPs the nodes got. For an
 > older cluster, per node: `kpodman stop <node>`,
 > `kpodman network disconnect k3d-dev <node>`,
 > `kpodman network connect --ip <IP> k3d-dev <node>`, `kpodman start <node>`.
@@ -101,8 +106,8 @@ Runtime
   sees nothing.
 - brew Podman is macOS-only. On Linux it shadowed `/usr/bin/podman` and broke.
   brew Docker is gone; `DOCKER_HOST` points k3d at Podman.
-- Podman logs to files, not journald. Its journald reader failed while k3d waited
-  for the server; cluster create also retries three times.
+- Podman logs to files, not journald (set in the image). Its journald reader
+  failed while k3d waited for the server; `kube-create` and `kube-up` also retry.
 
 Cluster shape (`home/dot_config/k3d/config.yaml`)
 

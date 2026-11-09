@@ -12,7 +12,6 @@ REPOS: tuple[tuple[str, str], ...] = (
     ("git@github.com:bourbonfgiles/dotfiles.git", "repos/personal/dotfiles"),
     ("git@github.com:bourbonfgiles/kube_local.git", "repos/personal/kube_local"),
     ("https://github.com/eza-community/eza-themes.git", "repos/personal/eza-themes"),
-    ("https://github.com/syl20bnr/spacemacs.git", ".emacs.d"),
 )
 
 GNOME_EXT_DASH = "dash-to-dock@micxgx.gmail.com"

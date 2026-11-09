@@ -184,195 +184,39 @@ def no_system_files(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class TestK8s:
-    def test_create_cluster_runs_k3d_on_linux(
+    def test_linux_only_checks_the_image_socket(
         self,
         monkeypatch: pytest.MonkeyPatch,
         fake_runner: FakeRunner,
-        tmp_path: Path,
+        settings: Settings,
     ) -> None:
-        config = tmp_path / "k3d" / "config.yaml"
-        config.parent.mkdir(parents=True)
-        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
         monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
-        assert k8s.create_cluster("dev") is True
-        assert fake_runner.ran("k3d", "registry", "create", "registry.localhost")
-        assert fake_runner.ran(
-            "k3d", "cluster", "create", "dev", "--config", str(config)
-        )
+        monkeypatch.setattr(shell, "command_exists", lambda _n: True)
+        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: False)
+        k8s.run(settings)
+        assert fake_runner.calls == []
 
-    def test_create_cluster_pins_node_ips(
+    def test_mac_makes_machine_rootful_with_memory(
         self,
         monkeypatch: pytest.MonkeyPatch,
         fake_runner: FakeRunner,
-        tmp_path: Path,
+        settings: Settings,
     ) -> None:
-        config = tmp_path / "k3d" / "config.yaml"
-        config.parent.mkdir(parents=True)
-        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
-        monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
-        sock = "unix:///run/podman/podman.sock"
-        fake_runner.script(
-            ["podman", "--url", sock, "ps"],
-            stdout="k3d-dev-server-0\nk3d-dev-agent-0\nk3d-dev-serverlb\n",
-        )
-        fake_runner.script(
-            ["podman", "--url", sock, "inspect", "k3d-dev-server-0"],
-            stdout="10.89.0.20\n",
-        )
-        fake_runner.script(
-            ["podman", "--url", sock, "inspect", "k3d-dev-agent-0"],
-            stdout="10.89.0.21\n",
-        )
-        assert k8s.create_cluster("dev") is True
-        connect = ["podman", "--url", sock, "network", "connect", "--ip"]
-        assert fake_runner.ran(*connect, "10.89.0.20", "k3d-dev", "k3d-dev-server-0")
-        assert fake_runner.ran(*connect, "10.89.0.21", "k3d-dev", "k3d-dev-agent-0")
-        assert not fake_runner.ran("podman", "--url", sock, "stop", "k3d-dev-serverlb")
-
-    def test_create_cluster_retries(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_runner: FakeRunner,
-        tmp_path: Path,
-    ) -> None:
-        config = tmp_path / "k3d" / "config.yaml"
-        config.parent.mkdir(parents=True)
-        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
-        monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
-        monkeypatch.setattr(k8s, "_CREATE_RETRY_PAUSE_S", 0)
-        fake_runner.script(["k3d", "cluster", "create"], returncode=1)
-        assert k8s.create_cluster("dev") is False
-        creates = [
-            c for c in fake_runner.calls if c[:3] == ["k3d", "cluster", "create"]
-        ]
-        assert len(creates) == 3
-
-    def test_create_cluster_sets_docker_host_on_mac(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
-        config = tmp_path / "k3d" / "config.yaml"
-        config.parent.mkdir(parents=True)
-        config.write_text("apiVersion: k3d.io/v1alpha5\n", encoding="utf-8")
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
         monkeypatch.setattr(platform, "is_mac", lambda: True)
         monkeypatch.setattr(shell, "command_exists", lambda _n: True)
-        monkeypatch.setattr(k8s, "_ensure_podman_machine", lambda: True)
-        monkeypatch.setattr(k8s, "_podman_socket", lambda: "/tmp/p.sock")
-        seen: dict[str, str] = {}
-
-        def fake_run(cmd, *, check, env=None, **kw):  # type: ignore[no-untyped-def]
-            seen.update(env or {})
-            import subprocess
-
-            return subprocess.CompletedProcess(cmd, 0, "", "")
-
-        monkeypatch.setattr(shell, "run", fake_run)
-        assert k8s.create_cluster("dev") is True
-        assert seen["DOCKER_HOST"] == "unix:///tmp/p.sock"
-
-    def test_create_cluster_noop_without_k3d(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
-    ) -> None:
-        monkeypatch.setattr(shell, "command_exists", lambda _n: False)
-        assert k8s.create_cluster() is False
-        assert fake_runner.calls == []
-
-    def test_create_cluster_noop_when_mac_runtime_missing(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
-    ) -> None:
-        monkeypatch.setattr(platform, "is_mac", lambda: True)
-        # k3d exists, but podman does not -> no Docker API available.
-        monkeypatch.setattr(shell, "command_exists", lambda n: n == "k3d")
-        assert k8s.create_cluster() is False
-        assert not fake_runner.ran("k3d", "cluster", "create")
-
-    def test_network_created_with_fixed_subnet_and_bridge(
-        self, fake_runner: FakeRunner
-    ) -> None:
-        sock = {"DOCKER_HOST": "unix:///run/podman/podman.sock"}
-        podman = ["podman", "--url", "unix:///run/podman/podman.sock", "network"]
-        fake_runner.script([*podman, "exists"], returncode=1)
-        assert k8s._ensure_network(sock) is True
-        assert fake_runner.ran(
-            *podman,
-            "create",
-            "--subnet",
-            "10.89.0.0/24",
-            "--interface-name",
-            "k3d0",
-            "k3d-dev",
+        fake_runner.script(
+            ["podman", "machine", "inspect", "podman-machine-default"],
+            stdout='[{"Name": "podman-machine-default", "Rootful": false, "Resources": {"Memory": 2048}}]',
         )
-
-    def test_existing_network_is_reused(self, fake_runner: FakeRunner) -> None:
-        assert k8s._ensure_network({"DOCKER_HOST": "unix:///s"}) is True
-        assert not fake_runner.ran("podman", "--url", "unix:///s", "network", "create")
-
-    def test_host_dns_unit_routes_domain_on_cluster_bridge(
-        self, fake_runner: FakeRunner, no_system_files: None
-    ) -> None:
-        body = k8s._KUBE_DNS_UNIT_BODY
-        assert "BindsTo=sys-subsystem-net-devices-k3d0.device" in body
-        assert "resolvectl dns k3d0 10.89.0.250" in body
-        assert "resolvectl domain k3d0 ~kube.internal" in body
-        assert "resolvectl dnsovertls k3d0 no" in body
-        k8s._ensure_host_dns()
-        assert fake_runner.ran(
-            "sudo", "tee", "/etc/systemd/system/dotfiles-kube-dns.service"
+        fake_runner.script(
+            ["podman", "machine", "list", "--format", "{{.Name}} {{.Running}}"],
+            stdout="podman-machine-default true\n",
         )
+        k8s.run(settings)
         assert fake_runner.ran(
-            "sudo", "systemctl", "enable", "--now", "dotfiles-kube-dns.service"
+            "podman", "machine", "set", "--rootful", "--memory", "8192"
         )
-
-    def test_podman_logging_drop_in_uses_capped_files(
-        self, fake_runner: FakeRunner, no_system_files: None
-    ) -> None:
-        assert 'log_driver = "k8s-file"' in k8s._PODMAN_LOGGING_BODY
-        assert "log_size_max" in k8s._PODMAN_LOGGING_BODY
-        k8s._ensure_podman_logging()
-        assert fake_runner.ran(
-            "sudo", "tee", "/etc/containers/containers.conf.d/dotfiles-k3d.conf"
-        )
-
-    def test_registry_create_uses_podman_network(self, fake_runner: FakeRunner) -> None:
-        assert k8s._ensure_registry({}) is True
-        assert fake_runner.ran(
-            "k3d",
-            "registry",
-            "create",
-            "registry.localhost",
-            "--port",
-            "127.0.0.1:5050",
-            "--default-network",
-            "podman",
-        )
-
-    def test_linux_points_docker_host_at_rootful_podman(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
-    ) -> None:
-        monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: True)
-        assert k8s._docker_env() == {"DOCKER_HOST": "unix:///run/podman/podman.sock"}
-        assert fake_runner.calls == []
-
-    def test_linux_enables_socket_for_wheel_when_unreachable(
-        self, monkeypatch: pytest.MonkeyPatch, fake_runner: FakeRunner
-    ) -> None:
-        monkeypatch.setattr(platform, "is_mac", lambda: False)
-        monkeypatch.setattr(k8s, "_linux_socket_ready", lambda: False)
-        assert k8s._docker_env() is None
-        assert fake_runner.ran(
-            "sudo", "tee", "/etc/systemd/system/podman.socket.d/dotfiles-wheel.conf"
-        )
-        assert fake_runner.ran("sudo", "systemctl", "restart", "podman.socket")
+        assert not fake_runner.ran("podman", "machine", "init")
 
 
 class TestKrew:

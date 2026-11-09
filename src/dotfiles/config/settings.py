@@ -23,11 +23,6 @@ class Settings:
         return self.repo_root / "home"
 
     @property
-    def system_dir(self) -> Path:
-        """Tracked system drop-ins (resolved, NetworkManager) for Linux."""
-        return self.repo_root / "system"
-
-    @property
     def brewfile(self) -> Path:
         """Homebrew Brewfile."""
         return self.repo_root / "brewfile"
