@@ -2,9 +2,6 @@
 # Brewfile - organized per OS. Applied by chezmoi whenever it changes.
 #
 #   Sections:  1) SHARED CLI    2) macOS only    3) Linux only
-#
-#   Linux GUI apps are Flatpaks (flatpaks, flatpaks-gaming); Ghostty and Albert
-#   are in the os_build image.
 ################################################################################
 
 

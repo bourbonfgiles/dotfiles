@@ -1,5 +1,5 @@
 #!/bin/sh
-# DNS over TLS to Cloudflare. On Linux the os_build image configures resolved.
+# DNS over TLS to Cloudflare.
 set -eu
 {{ if eq .chezmoi.os "darwin" -}}
 profile="$(mktemp -d)/Cloudflare-DoT.mobileconfig"
