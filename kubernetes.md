@@ -1,10 +1,8 @@
 # Local Kubernetes
 
-dotfiles creates an empty k3d cluster; on Linux the host side (rootful Podman
-socket, logging, `kube.internal` DNS) comes from the os_build image. It stops there:
-no CNI, nodes `NotReady`. The `kube_local` repo takes it from there. That split
-means the cluster can be bootstrapped with a different CNI or GitOps tool without
-touching dotfiles.
+dotfiles creates an empty k3d cluster: no CNI, nodes `NotReady`. On Linux the
+host side (rootful Podman socket, logging, `kube.internal` DNS) is in the os_build
+image; `kube_local` installs the platform.
 
 ## How the repos fit
 
@@ -38,7 +36,7 @@ sides together:
 | Value | dotfiles / os_build | kube_local |
 | --- | --- | --- |
 | Cluster `dev`, context `k3d-dev` | `home/dot_config/k3d/config.yaml` | `bootstrap.sh` default argument |
-| API endpoint `k3d-dev-serverlb:6443` | k3d's load balancer | `k8sServiceHost` in `overlays/local/cilium-values.yaml` |
+| API endpoint `k3d-dev-serverlb:6443` | k3d's load balancer | `bootstrap.sh` (`k8sServiceHost`), `overlays/local/cilium-values.yaml` (port) |
 | Network `10.89.0.0/24` | `kube-create` in `home/dot_zshrc` | LB pool in `overlays/local/lb-ipam.yaml` |
 | DNS `10.89.0.250`, zone `kube.internal` | os_build `kube-internal-dns.service` | `overlays/local/dns/bind.yaml` |
 | flannel, kube-proxy, servicelb, traefik, network policy off | k3s args | Cilium replaces all of them |
@@ -51,7 +49,7 @@ flowchart TB
   subgraph host["Host (Linux, os_build image)"]
     socket["podman.socket<br/>rootful, group wheel"]
     logs["containers.conf.d<br/>k8s-file log driver"]
-    nm["NetworkManager<br/>router DNS ignored (80-dns)"]
+    nm["NetworkManager<br/>DHCP DNS ignored (80-dns)"]
     unit["kube-internal-dns.service<br/>resolvectl on k3d0"]
   end
   subgraph podman["Rootful Podman"]
@@ -100,14 +98,14 @@ Then switch to `kube_local` and run `./overlays/local/bootstrap.sh`.
 
 Runtime
 
-- Rootful Podman on every OS. Cilium loads BPF programs, and atomic Fedora
-  disables unprivileged BPF. On Linux the system socket is opened to `wheel` so
-  k3d runs without sudo. `kpodman` reaches it; plain `podman` is rootless and
-  sees nothing.
-- brew Podman is macOS-only. On Linux it shadowed `/usr/bin/podman` and broke.
-  brew Docker is gone; `DOCKER_HOST` points k3d at Podman.
-- Podman logs to files, not journald (set in the image). Its journald reader
-  failed while k3d waited for the server; `kube-create` and `kube-up` also retry.
+- Rootful Podman on every OS: Cilium loads BPF programs, and atomic Fedora
+  disables unprivileged BPF. The Linux system socket is open to `wheel`, so k3d
+  runs without sudo. `kpodman` reaches it; plain `podman` is rootless and sees
+  nothing.
+- Podman comes from brew on macOS only; Linux uses the OS's. `DOCKER_HOST`
+  points k3d at it.
+- Podman logs to files, not journald. `kube-create` and `kube-up` also retry
+  while k3d waits for the server.
 
 Cluster shape (`home/dot_config/k3d/config.yaml`)
 
@@ -122,12 +120,10 @@ Cluster shape (`home/dot_config/k3d/config.yaml`)
 Network and DNS
 
 - A fixed network so LB IPs and the DNS route never move.
-- Kubelet gets its own `resolv.conf`. Otherwise pods inherited the host's
-  `fritz.box` search domain and every external lookup stalled first.
-- DNS-over-TLS everywhere: the host, rootless and rootful containers (the
-  image turns on DNS for the default `podman` network, so aardvark-dns forwards
-  to resolved) and pods. Wired connections ignore the FRITZ!Box, which only
-  speaks plain DNS to LAN clients.
+- Kubelet gets its own `resolv.conf` with no LAN search domains.
+- DNS over TLS everywhere: the host, rootless and rootful containers
+  (aardvark-dns forwards to resolved) and pods. Wired connections ignore
+  DHCP-supplied DNS.
 - `*.kube.internal` goes to `10.89.0.250` over `k3d0` only, without DoT or
   DNSSEC. Nothing answers until kube_local starts BIND.
 
@@ -141,7 +137,6 @@ Tooling
   krew's `access-matrix` and `rbac-tool` for RBAC.
 - The starship prompt shows the context: green for `k3d-*`, red for anything
   else, EKS ARNs shortened to `eks:<cluster>`.
-- BPF tools for the BPF Performance Tools book come from the OS image.
 
 On macOS the cluster runs inside a rootful `applehv` Podman machine, so the
 `10.89.0.x` addresses and host DNS rule don't apply; use `kubectl port-forward`.

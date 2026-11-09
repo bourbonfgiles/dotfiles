@@ -42,9 +42,8 @@ ports:
 # No bpffs volume: Cilium auto-mounts /sys/fs/bpf inside each agent, and eBPF
 # objects are kernel-global so host bpftool sees them regardless. A single
 # host bpffs shared across all node containers would collide pinned maps.
-# Pods inherit kubelet's resolv.conf. The node's own copy carries the host's LAN
-# search domains, so every external lookup first tried e.g. "<name>.fritz.box"
-# and could stall for seconds. This one points at Podman's DNS with no search.
+# Pods inherit kubelet's resolv.conf. This one points at Podman's DNS with no
+# LAN search domains, so external lookups don't stall on them first.
 files:
   - description: Pod DNS without LAN search domains
     source: |
