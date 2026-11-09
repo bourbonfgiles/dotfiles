@@ -12,7 +12,7 @@ setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 # Homebrew PATH (macOS + Linux)
 # Ensure brewed tools are on PATH across shells (official shellenv method).     #
 ################################################################################
-# Warp often starts non‑login shells; pull in ~/.zprofile where brew shellenv lives.
+# Some terminals start non-login shells; pull in ~/.zprofile where brew shellenv lives.
 if [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [[ -x /usr/local/bin/brew ]]; then

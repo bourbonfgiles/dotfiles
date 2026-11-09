@@ -42,7 +42,7 @@ def rpm_ostree_local_package(name: str) -> bool:
 def ensure_repo_file(path: str, body: str, *, label: str) -> None:
     """Write a yum ``.repo`` file via sudo if it is not already present.
 
-    ``label`` is used only for the log line (e.g. "Warp", "Albert").
+    ``label`` is used only for the log line (e.g. "Albert").
     """
     if Path(path).exists():
         logger.info("%s repo already present.", label)

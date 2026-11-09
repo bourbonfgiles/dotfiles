@@ -6,7 +6,7 @@ font-size = 10
 # background, without flattening the palette (1.0 = no adjustment).
 minimum-contrast = 1.1
 
-# Frosted background, similar to Warp's translucent window.
+# Frosted, translucent background.
 background-opacity = 0.96
 background-blur = 20
 

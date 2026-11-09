@@ -27,25 +27,23 @@ class TestEnsureRepoFile:
 
 class TestInstallOrMigrate:
     def test_fresh_install_layers_package(self, fake_runner: FakeRunner) -> None:
-        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=1)
-        system.rpmostree_install_or_migrate("warp-terminal", label="Warp")
+        fake_runner.script(["rpm", "-q", "albert"], returncode=1)
+        system.rpmostree_install_or_migrate("albert", label="Albert")
         assert fake_runner.ran(
-            "sudo", "rpm-ostree", "install", "--idempotent", "warp-terminal"
+            "sudo", "rpm-ostree", "install", "--idempotent", "albert"
         )
         assert not fake_runner.ran("sudo", "rpm-ostree", "uninstall")
 
     def test_migrates_local_package(self, fake_runner: FakeRunner) -> None:
-        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=0)
-        fake_runner.script(
-            ["rpm-ostree", "status"], stdout="LocalPackages: warp-terminal-1\n"
-        )
-        system.rpmostree_install_or_migrate("warp-terminal", label="Warp")
-        assert fake_runner.ran("sudo", "rpm-ostree", "uninstall", "warp-terminal")
-        assert fake_runner.ran("sudo", "rpm-ostree", "install", "warp-terminal")
+        fake_runner.script(["rpm", "-q", "albert"], returncode=0)
+        fake_runner.script(["rpm-ostree", "status"], stdout="LocalPackages: albert-1\n")
+        system.rpmostree_install_or_migrate("albert", label="Albert")
+        assert fake_runner.ran("sudo", "rpm-ostree", "uninstall", "albert")
+        assert fake_runner.ran("sudo", "rpm-ostree", "install", "albert")
 
     def test_already_repo_layered_is_noop(self, fake_runner: FakeRunner) -> None:
-        fake_runner.script(["rpm", "-q", "warp-terminal"], returncode=0)
+        fake_runner.script(["rpm", "-q", "albert"], returncode=0)
         fake_runner.script(["rpm-ostree", "status"], stdout="no local packages here\n")
-        system.rpmostree_install_or_migrate("warp-terminal", label="Warp")
+        system.rpmostree_install_or_migrate("albert", label="Albert")
         assert not fake_runner.ran("sudo", "rpm-ostree", "uninstall")
-        assert not fake_runner.ran("sudo", "rpm-ostree", "install", "warp-terminal")
+        assert not fake_runner.ran("sudo", "rpm-ostree", "install", "albert")

@@ -12,7 +12,6 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **CLI tools → Homebrew** (`brewfile`), shared across targets with small per-OS sections.
 - **GUI apps → Homebrew Casks on macOS, native Flatpak on Linux** (`flatpaks`).
 - **Ghostty** → Homebrew cask on macOS; `scottames/ghostty` COPR layered with `rpm-ostree` on atomic Fedora.
-- **Warp** → Homebrew cask on macOS; official Warp RPM repo layered with `rpm-ostree` on atomic Fedora.
 - **Gaming** → native on Bazzite; Flatpaks (`flatpaks-gaming`) on Silverblue (+ optional rebase note).
 - **Containers** → Apple `container` and brew Podman on macOS; the OS's own `podman` on Linux. k3d uses rootful Podman on both.
 - **Local Kubernetes** → a 4-node k3d cluster on rootful Podman, empty until the `kube_local` repo bootstraps it. See [kubernetes.md](kubernetes.md).
@@ -46,8 +45,8 @@ flowchart TD
   S[bootstrap.sh: ensure brew + uv] --> M[uv run python -m dotfiles]
   M --> H["homebrew (brew bundle)"] --> G[git_ssh] --> C[chezmoi apply]
   C --> D{OS?}
-  D -->|Linux| E[flatpak → ghostty → warp → albert → gaming]
-  D -->|macOS| X[Casks cover GUI, Ghostty and Warp]
+  D -->|Linux| E[flatpak → ghostty → albert → gaming]
+  D -->|macOS| X[Casks cover GUI and Ghostty]
   E --> K["k8s → krew → bpf (Linux only)"]
   X --> K
   K --> Z[shell_default → dns → gnome → fonts → neovim → checks]
@@ -93,7 +92,7 @@ tests/
 ## Notes (Bazzite / Silverblue)
 
 - chezmoi only writes `$HOME` — install via Homebrew.
-- Ghostty/Warp still need `rpm-ostree` + reboot.
+- Ghostty and Albert still need `rpm-ostree` + reboot.
 - DNS uses `system/resolved.conf.d/*` drop-ins (not a full rewrite of resolved.conf).
 - Neovim config is chezmoi-managed; the neovim step only syncs plugins. lazy.nvim's luarocks support is off (its Lua build needs readline headers Bazzite lacks); plugins that ship rockspecs get their dependencies as ordinary plugins instead.
 
