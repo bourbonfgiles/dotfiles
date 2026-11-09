@@ -142,6 +142,13 @@ def _keyboard_repeat() -> None:
     _gset(base, "repeat-interval", "8")
 
 
+def _no_ac_suspend() -> None:
+    """Never suspend on AC: the keyboard behind the monitor's KVM is dead after resume."""
+    _gset(
+        "org.gnome.settings-daemon.plugins.power", "sleep-inactive-ac-type", "'nothing'"
+    )
+
+
 def run(settings: Settings) -> None:
     """Install/enable GNOME extensions and apply tracked dconf + tweaks."""
     if platform.is_mac():
@@ -182,4 +189,5 @@ def run(settings: Settings) -> None:
     )
     _albert_hotkey()
     _keyboard_repeat()
+    _no_ac_suspend()
     logger.info("GNOME setup done. Log out/in to load newly installed extensions.")
