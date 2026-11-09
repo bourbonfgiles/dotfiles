@@ -1,5 +1,4 @@
-# Committed defaults (personal). Work identity is NOT stored here — set it on the
-# machine under ~/.config/chezmoi/chezmoi.toml (see chezmoi.toml.example).
+# Personal identity. The work one lives on the machine; see chezmoi.toml.example.
 [git]
 name = "bourbonfgiles"
 email = "giles@live.co.uk"

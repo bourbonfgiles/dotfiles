@@ -116,11 +116,6 @@ brew "sops"
 # 2) macOS only
 ################################################################################
 if OS.mac?
-  tap "d12frosted/emacs-plus"
-  tap "nikitabobko/tap"
-
-  brew "emacs-plus@30"
-
   brew "container"
   brew "k3d"
   brew "podman"
@@ -153,7 +148,6 @@ end
 # 3) Linux only  (Bazzite + Silverblue)
 ################################################################################
 if OS.linux?
-  brew "emacs"
   brew "k3d"
   brew "wl-clipboard"
   brew "xclip"

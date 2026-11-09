@@ -16,6 +16,7 @@ Reproducible setup for three targets that share one bootstrap and the same tooli
 - **Containers** → Apple `container` and brew Podman on macOS; the OS's own `podman` on Linux. k3d uses rootful Podman on both.
 - **Local Kubernetes** → a 4-node k3d cluster on rootful Podman, empty until the `kube_local` repo bootstraps it. See [kubernetes.md](kubernetes.md).
 - **kubectl plugins** → the `krew` step installs `access-matrix` and `rbac-tool` for reading RBAC from the terminal.
+- **Linux system config** → the [os_build](https://github.com/bourbonfgiles/os_build) image: DNS over TLS, and k3d's rootful `podman.socket`, logging and `kube.internal` DNS. dotfiles only writes `$HOME` there, plus one `nmcli` setting.
 - **GNOME desktop** → Dash to Dock + Tiling Shell on Linux from `dconf/`, no suspend on AC (the KVM keyboard dies after resume); Hammerspoon on macOS.
 
 Flatpaks install via a dedicated step (not `brew bundle`). Flatpak **overrides** are applied by chezmoi under `~/.local/share/flatpak/overrides/`.
@@ -58,7 +59,6 @@ flowchart TD
 ```
 home/
   dot_zshrc              → ~/.zshrc
-  dot_spacemacs          → ~/.spacemacs
   dot_gitconfig.tmpl     → ~/.gitconfig   (from .chezmoidata.toml)
   dot_config/…           → ~/.config/…
   dot_local/share/flatpak/overrides/… → flatpak overrides
@@ -78,7 +78,6 @@ Git identity:
 
 ```
 home/             Chezmoi source state
-system/           Linux resolved + NetworkManager drop-ins (dns step)
 brewfile          Homebrew packages
 flatpaks*         Flathub app ID lists
 bootstrap.sh      Fresh-machine entry
@@ -92,25 +91,21 @@ tests/
 
 - chezmoi only writes `$HOME` — install via Homebrew.
 - Nothing is layered with `rpm-ostree`: packages belong in the OS image.
-- DNS uses `system/resolved.conf.d/*` drop-ins (not a full rewrite of resolved.conf).
+- Plain Silverblue lacks what the os_build image adds (DNS over TLS, the k3d socket); rebase onto it or add them by hand.
 - Neovim config is chezmoi-managed; the neovim step only syncs plugins. lazy.nvim's luarocks support is off (its Lua build needs readline headers Bazzite lacks); plugins that ship rockspecs get their dependencies as ordinary plugins instead.
 
 ## Notes (brew on macOS)
 
-`brew install hashicorp/tap/*` and similar will sometimes fail cloning with `could not read Username for 'https://github.com'`. Brew shells out to git with `GIT_TERMINAL_PROMPT=0` and `/opt/homebrew/etc/gitconfig` only sets `credential.helper=osxkeychain` — with nothing stored for `github.com`, git dies before it can fall through to anonymous cloning.
-
-Fix (scoped to brew's git operations only — leaves `~/.gitconfig`, the included work identity, and clones in `~/repos/vitalhub/` untouched):
+Tap installs such as `brew install hashicorp/tap/*` can fail with `could not read Username for 'https://github.com'`: brew's git has no stored GitHub credential and won't prompt. Make brew's git (only) use SSH:
 
 ```ini
-# /opt/homebrew/etc/gitconfig
+# /opt/homebrew/etc/gitconfig (Linuxbrew: /home/linuxbrew/.linuxbrew/etc/gitconfig)
 [credential]
     helper = osxkeychain
 
 [url "git@github.com:"]
     insteadOf = https://github.com/
 ```
-
-This rewrites `https://github.com/...` to `git@github.com:...` whenever git reads brew's system gitconfig (every brew-driven clone). The existing personal SSH key registered under `bourbonfgiles` via `gh` and `~/.ssh/config` handles auth. Linuxbrew's is `/home/linuxbrew/.linuxbrew/etc/gitconfig`, which would need the same block on Linux if the same error appears there.
 
 ## Ghostty
 

@@ -3,10 +3,7 @@ k9s:
   screenDumpDir: /tmp/k9s-screen-dumps
   refreshRate: 2
   maxConnRetry: 5
-  # Fail safe: read-only by default so prod/remote contexts cannot be mutated by
-  # accident. Toggle write mode per session with `w` (or launch `k9s --write`)
-  # on the local dev cluster.
-  readOnly: true
+  readOnly: false
   noExitOnCtrlC: false
   ui:
     enableMouse: true

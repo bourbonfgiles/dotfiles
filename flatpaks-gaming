@@ -1,6 +1,4 @@
-# Gaming Flatpaks installed on Silverblue / non-Bazzite Fedora Atomic by
-# src/dotfiles/services/gaming.py. Bazzite ships these natively, so it is
-# skipped there. One id per line; "#" comments allowed.
+# Silverblue only; Bazzite ships these natively.
 com.discordapp.Discord
 
 com.valvesoftware.Steam

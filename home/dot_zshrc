@@ -1,26 +1,17 @@
-
-################################################################################
 # History
-################################################################################
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=20000
 SAVEHIST=20000
 HISTORY_IGNORE='(cps*|cpe*|history|ll|ls|z|exit|k9s)'
 setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 
-################################################################################
 # Keys
-################################################################################
 # zsh binds none of these, so Delete prints "~". Both cursor-key modes are covered.
 bindkey '^[[3~' delete-char
 bindkey '^[[H' beginning-of-line '^[OH' beginning-of-line
 bindkey '^[[F' end-of-line '^[OF' end-of-line
 
-################################################################################
-# Homebrew PATH (macOS + Linux)
-# Ensure brewed tools are on PATH across shells (official shellenv method).     #
-################################################################################
-# Some terminals start non-login shells; pull in ~/.zprofile where brew shellenv lives.
+# Homebrew (non-login shells miss ~/.zprofile)
 if [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [[ -x /usr/local/bin/brew ]]; then
@@ -30,12 +21,9 @@ elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
 elif [[ -x "$HOME/.linuxbrew/bin/brew" ]]; then
   eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
 fi
-# Also source ~/.zprofile if present (local, non-tracked additions).
 [[ -r "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
 
-################################################################################
-# Zsh completion system (must be before any compdef/completion usage)
-################################################################################
+# Completion
 autoload -Uz compinit
 
 # Cache gh / kubectl / helm completions to a dir on $fpath, regenerating a file
@@ -68,53 +56,44 @@ else
   compinit -C -i -d "$_zcompdump"
 fi
 
-################################################################################
 # Aliases
-################################################################################
 alias ll='eza -la --group-directories-first --icons --color=always --header'
 alias top='btm'
 if command -v xclip >/dev/null; then
   alias xclip='xclip -selection clipboard'
 fi
+# macOS clipboard commands on Linux (Wayland).
+if [[ $OSTYPE == linux* ]] && command -v wl-copy >/dev/null; then
+  alias pbcopy='wl-copy'
+  alias pbpaste='wl-paste --no-newline'
+fi
 
-################################################################################
 # zoxide
-################################################################################
 if command -v zoxide >/dev/null; then
   eval "$(zoxide init zsh)"
 fi
 
-################################################################################
 # Starship Prompt
-################################################################################
 if command -v starship >/dev/null; then
   eval "$(starship init zsh)"
 fi
 
-################################################################################
 # Carapace Completions
-################################################################################
 if command -v carapace >/dev/null; then
   eval "$(carapace _carapace)"
 fi
 
-################################################################################
 # fzf (key-bindings + completion)
-################################################################################
 if command -v fzf >/dev/null; then
   source <(fzf --zsh)
 fi
 
-################################################################################
-# eza Theme Path (cross‑platform)
-################################################################################
+# Config locations
 export EZA_CONFIG_DIR="$HOME/.config/eza"
 # k9s otherwise uses ~/Library/Application Support/k9s on macOS
 export K9S_CONFIG_DIR="$HOME/.config/k9s"
 
-################################################################################
 # Editor
-################################################################################
 if command -v nvim >/dev/null; then
   export EDITOR="nvim"
   export VISUAL="nvim"
@@ -123,14 +102,10 @@ elif command -v vim >/dev/null; then
   export VISUAL="vim"
 fi
 
-################################################################################
-# Terraform version management (tenv)
-################################################################################
+# tenv
 export TENV_AUTO_INSTALL=true
 
-################################################################################
-# Docker API socket for k3d: rootful Podman (machine on macOS, system on Linux)
-################################################################################
+# k3d: rootful Podman's Docker API (the machine on macOS, the system socket on Linux)
 if [[ "$OSTYPE" == darwin* ]] && command -v podman >/dev/null; then
   _podman_sock="$(podman machine inspect podman-machine-default 2>/dev/null \
     | sed -n 's/.*"Path" *: *"\(.*api.sock\)".*/\1/p' | head -1)"
@@ -141,16 +116,57 @@ elif [[ -S /run/podman/podman.sock ]]; then
   alias kpodman="podman --url \$DOCKER_HOST"
 fi
 
-################################################################################
-# k3d cluster on demand: kube-up / kube-down (never started at boot)
-################################################################################
-kube-up() {
+_kube_docker_host() {
   if [[ "$OSTYPE" == darwin* ]]; then
     podman machine start podman-machine-default 2>/dev/null
-    local sock="$(podman machine inspect podman-machine-default \
+    export DOCKER_HOST="unix://$(podman machine inspect podman-machine-default \
       | sed -n 's/.*"Path" *: *"\(.*api.sock\)".*/\1/p' | head -1)"
-    export DOCKER_HOST="unix://$sock"
   fi
+  [[ -S "${DOCKER_HOST#unix://}" ]] || { print -u2 "no Podman socket at $DOCKER_HOST"; return 1; }
+}
+
+# The k3d cluster, on demand: kube-create once, then kube-up / kube-down. Nothing starts at boot.
+kube-create() {
+  local name="${1:-dev}" i node ip
+  _kube_docker_host || return 1
+  local p=(podman --url "$DOCKER_HOST")
+  # Fixed subnet and bridge: kube_local's LB pool and kube.internal DNS depend on them.
+  if "${p[@]}" network exists k3d-dev; then
+    [[ "$("${p[@]}" network inspect k3d-dev --format '{{.NetworkInterface}}')" == k3d0 ]] ||
+      print -u2 "k3d-dev isn't on bridge k3d0, so *.kube.internal won't resolve; delete the cluster and the network"
+  else
+    "${p[@]}" network create --subnet 10.89.0.0/24 --interface-name k3d0 k3d-dev || return 1
+  fi
+  # Outlives clusters to keep the image cache. Loopback only; 5000 is AirPlay on macOS.
+  k3d registry list -o json | grep -q k3d-registry.localhost ||
+    k3d registry create registry.localhost --port 127.0.0.1:5050 --default-network podman || return 1
+  for i in 1 2 3; do
+    k3d cluster create "$name" --config "${XDG_CONFIG_HOME:-$HOME/.config}/k3d/config.yaml" --timeout 300s && break
+    (( i == 3 )) && return 1
+    sleep 5
+  done
+  # Podman gives nodes new IPs on every start, which breaks etcd and Cilium: pin the current ones.
+  for node in $("${p[@]}" ps -a --filter "label=k3d.cluster=$name" --format '{{.Names}}' | grep -E -- '-(server|agent)-[0-9]+$'); do
+    ip="$("${p[@]}" inspect "$node" --format '{{(index .NetworkSettings.Networks "k3d-dev").IPAddress}}')"
+    [[ -n "$ip" ]] || { print -u2 "no IP for $node; it may move on restart"; continue; }
+    echo "Pinning $node to $ip"
+    "${p[@]}" stop "$node" >/dev/null
+    "${p[@]}" network disconnect k3d-dev "$node"
+    "${p[@]}" network connect --ip "$ip" k3d-dev "$node"
+    "${p[@]}" start "$node" >/dev/null
+  done
+  for i in {1..30}; do
+    kubectl --context "k3d-$name" get nodes 2>/dev/null && return
+    sleep 2
+  done
+}
+
+kube-delete() {
+  _kube_docker_host && k3d cluster delete "${1:-dev}"
+}
+
+kube-up() {
+  _kube_docker_host || return 1
   podman --url "$DOCKER_HOST" start k3d-registry.localhost >/dev/null
   # k3d's wait on the server's logs can fail under Podman's journald driver
   local i
@@ -166,8 +182,6 @@ kube-down() {
   podman --url "$DOCKER_HOST" stop k3d-registry.localhost >/dev/null
 }
 
-################################################################################
-# Secrets (not tracked in git)
-################################################################################
+# Secrets (untracked)
 [[ -f "$HOME/.zshrc.secrets" ]] && source "$HOME/.zshrc.secrets"
 export PATH="$HOME/.local/bin:$HOME/bin:${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
