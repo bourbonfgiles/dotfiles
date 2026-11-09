@@ -1,8 +1,5 @@
-# Flathub application IDs installed on every Linux target (Bazzite + Silverblue)
-# by src/dotfiles/services/flatpak.py. One id per line; "#" comments allowed.
-# Gaming apps live in "flatpaks-gaming". Ghostty, Albert and the BPF tools are not
-# Flatpaks; on Linux they are built into the OS image.
-# Flatpak overrides are tracked under home/dot_local/share/flatpak/overrides.
+# Flathub apps on every Linux target. Gaming is in flatpaks-gaming; Ghostty,
+# Albert and the BPF tools are in the OS image.
 
 # Browsers
 app.zen_browser.zen
