@@ -23,6 +23,20 @@ width=$((cols - 18))
 skip='kubectl-(scale|version|completion|krew|cluster-info|api-versions)|podman-(image-load|images|ps|pull)|systemctl-(help|halt|poweroff|reboot|emergency|rescue|isolate|kexec|exit|hibernate|hybrid-sleep|suspend.*)'
 
 pick() { awk -v s="$RANDOM" 'BEGIN{srand(s)} {a[NR]=$0} END{if (NR) print a[int(rand()*NR)+1]}'; }
+# Like pick, but no entry repeats until every entry of list $1 has been shown.
+deal() {
+  local seen=$cache/seen/$1 all choice
+  mkdir -p "$cache/seen"; touch "$seen"
+  all=$(cat)
+  [ -n "$all" ] || return 1
+  choice=$(grep -vxFf "$seen" <<<"$all" | pick)
+  if [ -z "$choice" ]; then
+    grep -vxFf <(printf '%s\n' "$all") "$seen" > "$seen.new"; mv "$seen.new" "$seen"
+    choice=$(pick <<<"$all")
+  fi
+  printf '%s\n' "$choice" >> "$seen"
+  printf '%s\n' "$choice"
+}
 try() { for _ in 1 2 3 4 5; do "$@" && return 0; done; return 1; }
 dashes() { [ "$1" -gt 0 ] && printf '─%.0s' $(seq "$1"); }
 
@@ -34,13 +48,16 @@ cmd() { printf "${d}│${n}                 ${y}\$ %s${n}\n" "$1"; }
 divider() { printf "${d}├%s${n}\n" "$(dashes $((cols - 1)))"; }
 gap() { printf "${d}│${n}\n"; }
 # First sentences, up to ~300 characters.
-sentences() { tr -s ' \t' ' ' | sed 's/‐ //g' | sed -E 's/ More info: .*//; s/ Possible enum values:.*//' | cut -c1-300 | sed -E 's/^(.*[.]) .*/\1/; s/ +$//'; }
+sentences() {
+  tr -s ' \t' ' ' | sed -E 's/‐ //g; s/^ +//; s/ More info: .*//; s/ Possible enum values:.*//; s/(i\.e|e\.g)\./\1§/g' \
+    | cut -c1-300 | sed -E 's/^(.*[.]) .*/\1/; s/ +$//; s/§/./g'
+}
 
 # Two examples from a random tldr page whose name matches $3 (ERE).
 tip_tldr() {
   local icon=$1 label=$2 page f
   page=$(ls "$tldr_pages"/common "$tldr_pages/$platform" 2>/dev/null | sed -n 's/\.md$//p' \
-    | grep -E "^($3)$" | grep -vE "^($skip)$" | pick)
+    | grep -E "^($3)$" | grep -vE "^($skip)$" | deal "tldr-$2")
   [ -n "$page" ] || return 1
   f=$(ls "$tldr_pages/$platform/$page.md" "$tldr_pages/common/$page.md" 2>/dev/null | head -1)
   grep -q 'This command is an alias of' "$f" && return 1
@@ -84,10 +101,10 @@ man_entry() {
 tip_directive() {
   local entry key page text
   entry=$(MANWIDTH=200 man systemd.directives 2>/dev/null | col -b | awk '
-    /^ +[A-Z][A-Za-z]+=$/ { k = $1; next }
-    k && /^ +systemd\.[a-z-]+\(5\)/ { print k, $1 }
+    /^[ \t]+[A-Z][A-Za-z]+=$/ { k = $1; next }
+    k && /^[ \t]+systemd\.[a-z-]+\(5\)/ { print k, $1 }
     { k = "" }
-  ' | pick)
+  ' | deal systemd)
   [ -n "$entry" ] || return 1
   key=${entry%% *} page=${entry#* }
   text=$(man_entry "$key" "${page%%(*}") || return 1
@@ -97,7 +114,7 @@ tip_directive() {
 
 tip_plist() {
   local key text
-  key=$(MANWIDTH=200 man launchd.plist 2>/dev/null | col -b | awk '/^ +[A-Z][A-Za-z]+ <[a-z]+>/ { print $1 }' | pick)
+  key=$(MANWIDTH=200 man launchd.plist 2>/dev/null | col -b | awk '/^ +[A-Z][A-Za-z]+ <[a-z]+>/ { print $1 }' | deal launchd)
   [ -n "$key" ] || return 1
   text=$(man_entry "$key <" launchd.plist) || return 1
   item "" launchd "${y}${key}${n}" "man launchd.plist"
@@ -118,7 +135,7 @@ tip_explain() {
     done > "$paths.new" && [ -s "$paths.new" ] && mv "$paths.new" "$paths"
   fi
   path=$(grep -E '^[a-z]+\.spec\.[^.]+(\.[^.]+)?$' "$paths" 2>/dev/null \
-    | grep -vE '\.(template\.spec|jobTemplate\.spec\.template)\.|\.metadata\.' | pick)
+    | grep -vE '\.(template\.spec|jobTemplate\.spec\.template)\.|\.metadata\.' | deal explain)
   [ -n "$path" ] || return 1
   text=$(kubectl --context "$ctx" --request-timeout=2s explain "$path" 2>/dev/null \
     | awk '/^DESCRIPTION:/ { on = 1; next } on && /^[A-Z]+:/ { exit } on { sub(/^ +/, ""); printf "%s ", $0 }')
@@ -132,12 +149,12 @@ tip_explain() {
 tip_bpf() {
   local tool desc run src
   if [ $((RANDOM % 2)) = 0 ]; then
-    tool=$(ls /usr/share/bpftrace/tools/*.bt 2>/dev/null | pick)
+    tool=$(ls /usr/share/bpftrace/tools/*.bt 2>/dev/null | deal bpftrace)
     [ -n "$tool" ] || return 1
     desc=$(sed -n '2s|^// *[^[:space:]]*[[:space:]]*||p' "$tool" | sed 's/^- *//')
     run="sudo bpftrace $tool" src="man $(basename "$tool")"
   else
-    tool=$(find /usr/share/bcc/tools -maxdepth 1 -type f -perm -u+x 2>/dev/null | pick)
+    tool=$(find /usr/share/bcc/tools -maxdepth 1 -type f -perm -u+x 2>/dev/null | deal bcc)
     [ -n "$tool" ] || return 1
     desc=$(man -f "bcc-$(basename "$tool")" 2>/dev/null | head -1 | sed 's/^.* - //')
     run="sudo $tool" src="man bcc-$(basename "$tool")"
@@ -160,13 +177,33 @@ tip_man() {
       7:systemd.net-naming-scheme 7:systemd.journal-fields 7:systemd.syntax 7:systemd.offline-updates
       8:tc-bpf 8:tc 8:tc-fq_codel 8:ip-netns 8:ip-route 8:ip-rule 8:ld.so 8:nft 8:cryptsetup
       8:systemd-resolved 8:systemd-networkd 8:systemd-journald 8:systemd-oomd 8:systemd-udevd
-      8:kernel-install 8:bootup 8:mount 8:ss 8:tcpdump 8:sysctl 8:bpftool 8:ethtool'
+      8:kernel-install 8:bootup 8:mount 8:ss 8:tcpdump 8:sysctl 8:bpftool 8:ethtool
+      7:arp 7:icmp 7:raw 7:address_families 7:environ 7:signal-safety 7:keyrings
+      7:persistent-keyring 7:ipc_namespaces 7:uts_namespaces 7:pty 7:udplite 7:inode 7:aio
+      7:sigevent 7:time 7:random 7:utf-8 7:sem_overview 7:pthreads 7:nptl 7:kernel_lockdown
+      7:landlock 7:bootparam 7:boot 7:sock_diag 7:systemd.generator 7:systemd.environment-generator
+      7:sd-boot 7:systemd.image-policy 7:systemd.system-credentials 7:systemd.v
+      7:systemd.journal-fields 7:systemd.index 7:capabilities 7:mount_namespaces
+      8:tc-htb 8:tc-netem 8:tc-tbf 8:tc-cake 8:tc-flower 8:tc-mirred 8:ip-link 8:ip-address
+      8:ip-neighbour 8:ip-xfrm 8:ip-tunnel 8:ip-monitor 8:bridge 8:nstat 8:conntrack 8:iptables
+      8:ldconfig 8:modprobe 8:depmod 8:dracut 8:lvm 8:lvcreate 8:mkfs.btrfs 8:btrfs-subvolume
+      8:blkid 8:wipefs 8:losetup 8:dmsetup 8:setcap 8:getcap 8:auditctl 8:ausearch 8:sestatus
+      8:restorecon 8:chronyd 8:sshd 8:systemd-logind 8:systemd-timesyncd 8:systemd-tmpfiles
+      8:systemd-sysusers 8:systemd-homed 8:systemd-repart 8:systemd-cryptsetup 8:systemd-sysext
+      8:bootc 8:fstrim 8:nvme 8:smartctl 8:xfs_info 8:iscsiadm 8:ipvsadm 8:arping 8:tracepath
+      1:rpm-ostree 1:systemd-run 1:systemd-analyze 1:busctl 1:journalctl 1:coredumpctl 1:perf
+      1:perf-trace 1:perf-record 1:strace 1:ltrace 1:nsenter 1:unshare 1:chrt 1:taskset 1:flock'
   else
     pages='8:launchd 8:launchctl 8:syslogd 8:mDNSResponder 8:pfctl 8:fs_usage 8:sc_usage
       8:nvram 8:kextstat 8:mount 8:sysctl 8:route 8:tcpdump 7:re_format 7:hier 7:security
-      1:dtrace 1:dtruss 1:sandbox-exec 1:log 1:codesign 1:spctl 1:nettop'
+      1:dtrace 1:dtruss 1:sandbox-exec 1:log 1:codesign 1:spctl 1:nettop 1:pmset 1:caffeinate
+      1:defaults 1:plutil 1:scutil 1:networksetup 1:diskutil 1:hdiutil 1:tmutil 1:mdfind 1:mdutil
+      1:xattr 1:ditto 1:sips 1:security 1:otool 1:vm_stat 1:powermetrics 1:system_profiler
+      1:softwareupdate 1:pkgutil 1:installer 1:lsof 1:sample 1:spindump 1:leaks 1:heap 1:vmmap
+      1:fs_usage 1:taskpolicy 1:launchctl 1:dscacheutil 1:dns-sd 1:ipconfig 1:ifconfig 1:netstat
+      5:launchd.plist 5:pf.conf 5:sshd_config 5:ssh_config 5:resolver 8:sshd 8:periodic 8:newsyslog'
   fi
-  entry=$(tr -s ' \n' '\n' <<<"$pages" | grep . | pick)
+  entry=$(tr -s ' \n' '\n' <<<"$pages" | grep . | deal "man-$platform")
   sec=${entry%%:*} page=${entry#*:}
   man -w "$sec" "$page" >/dev/null 2>&1 || return 1
   text=$(MANWIDTH=200 man "$sec" "$page" 2>/dev/null | col -b | awk '
@@ -182,7 +219,7 @@ tip_man() {
 # A port worth knowing, and why.
 tip_port() {
   local entry
-  entry=$(grep -v '^$' <<'PORTS' | pick
+  entry=$(grep -v '^$' <<'PORTS' | deal port
 22/tcp	SSH	SSM Session Manager means you can leave it closed on EC2
 53/udp+tcp	DNS	TCP for answers over 512 bytes and zone transfers (AXFR, RFC 2136 updates)
 123/udp	NTP	clock skew breaks TLS, Kerberos and etcd leases
@@ -229,6 +266,68 @@ tip_port() {
 30000-32767/tcp	NodePort	default Service NodePort range
 32768-60999/tcp	ephemeral	Linux's default source port range (net.ipv4.ip_local_port_range); NACLs must allow it back
 51820/udp	WireGuard	Cilium transparent encryption
+20-21/tcp	FTP	data and control; passive mode needs a high port range open too
+69/udp	TFTP	what PXE boot fetches kernels with
+111/tcp+udp	rpcbind	NFSv3 needs it; NFSv4 only needs 2049
+137-139/tcp+udp, 445/tcp	SMB	Windows file sharing; 445 is the one FSx for Windows uses
+161-162/udp	SNMP	polling on 161, traps to 162
+465/tcp	SMTPS	SMTP over implicit TLS
+873/tcp	rsync	the rsync daemon; rsync over SSH uses 22
+993/tcp	IMAPS	IMAP over TLS
+1080/tcp	SOCKS	proxy; ssh -D opens one locally
+1194/udp	OpenVPN	default port
+1433/tcp	SQL Server	RDS for SQL Server
+1521/tcp	Oracle	the listener; RDS for Oracle
+1812-1813/udp	RADIUS	authentication and accounting
+1883/tcp, 8883/tcp	MQTT	plain and TLS; AWS IoT Core uses 8883
+2181/tcp	ZooKeeper	older Kafka clusters; KRaft mode no longer needs it
+3128/tcp	Squid	default forward proxy port
+3200/tcp	Tempo	HTTP API; queries traces
+3260/tcp	iSCSI	block storage such as Longhorn and FSx for ONTAP
+3389/tcp	RDP	Windows remote desktop; Fleet Manager can avoid opening it
+3478/udp	STUN/TURN	WebRTC NAT traversal
+4222/tcp	NATS	client connections
+5044/tcp	Beats	Filebeat to Logstash
+5353/udp	mDNS	.local names; Avahi on Linux, Bonjour on macOS
+5355/udp	LLMNR	legacy name resolution; your systemd-resolved has it off
+5473/tcp	Calico Typha	fans out datastore updates to Felix
+5601/tcp	Kibana	and OpenSearch Dashboards
+5671-5672/tcp	AMQP	RabbitMQ and Amazon MQ, TLS and plain
+5900/tcp	VNC	remote desktop; never on the internet without a tunnel
+6514/tcp	syslog over TLS	RFC 5425
+7000-7001/tcp, 9042/tcp	Cassandra	inter-node on 7000/7001, CQL clients on 9042; Keyspaces uses 9142
+8080/tcp	http-alt	the default for countless apps and sidecars
+8086/tcp	InfluxDB	HTTP API
+8125/udp	StatsD	metrics over UDP, fire and forget
+8200/tcp	Vault	API and UI
+8300-8302/tcp+udp	Consul	server RPC and Serf gossip
+8443/tcp	https-alt	common for webhooks and admin UIs
+8500/tcp, 8600/udp	Consul	HTTP API and DNS
+9000-9001/tcp	MinIO	S3 API and console
+9092/tcp	Kafka	brokers; MSK uses 9094 for TLS and 9098 for IAM
+9094/tcp+udp	Alertmanager	cluster gossip between replicas
+9095/tcp	Loki, Tempo	gRPC between components
+9099/tcp	Calico Felix	health checks
+9091/tcp	Pushgateway	batch jobs push metrics here
+9113/tcp	nginx exporter	Prometheus metrics for nginx
+9115/tcp	blackbox exporter	probes HTTP, TCP, ICMP and DNS from outside
+9121/tcp	redis exporter	Prometheus metrics for Redis
+9187/tcp	postgres exporter	Prometheus metrics for PostgreSQL
+9400/tcp	DCGM exporter	NVIDIA GPU metrics
+9411/tcp	Zipkin	trace collection API
+9962/tcp	cilium-agent metrics	Prometheus endpoint, when enabled
+9963/tcp	cilium-operator metrics	Prometheus endpoint, when enabled
+9964/tcp	Cilium Envoy metrics	Prometheus endpoint, when enabled
+9965/tcp	Hubble metrics	flow metrics for Prometheus, when enabled
+10248/tcp	kubelet healthz	localhost only
+10249/tcp	kube-proxy metrics	localhost by default
+10255/tcp	kubelet read-only	unauthenticated; disabled by default and should stay that way
+15001/tcp, 15006/tcp	Istio capture	outbound and inbound traffic redirected into Envoy
+15017/tcp	istiod webhook	sidecar injection and validation
+15021/tcp	Istio health	the sidecar's readiness endpoint
+15090/tcp	Envoy stats	Prometheus metrics from Istio sidecars
+27017/tcp	MongoDB	and Amazon DocumentDB
+50000/tcp	Jenkins agents	inbound TCP agent connections
 PORTS
 )
   [ -n "$entry" ] || return 1
@@ -239,12 +338,35 @@ PORTS
 # An HTTP status code with Python's description of it.
 tip_http() {
   local text
-  text=$(python3 -I -c '
-import http, random
-s = random.choice(list(http.HTTPStatus))
-print(f"{s.value} {s.phrase}\t{s.description}")' 2>/dev/null) || return 1
+  text=$( {
+    python3 -I -c '
+import http
+for s in http.HTTPStatus:
+    print(f"{s.value} {s.phrase}\t{s.description}")' 2>/dev/null
+    grep -v '^$' <<'HTTP'
+444 No Response (nginx)	nginx closed the connection without sending anything; used to drop bad clients
+494 Request Header Too Large (nginx)	a header or cookie is over large_client_header_buffers
+495 SSL Certificate Error (nginx)	the client presented an invalid certificate in mutual TLS
+496 SSL Certificate Required (nginx)	mutual TLS is on and the client sent no certificate
+497 HTTP Request Sent to HTTPS Port (nginx)	plain HTTP arrived on a TLS listener
+499 Client Closed Request (nginx)	the client gave up before nginx answered; often a client timeout shorter than the backend's
+460 Client Closed Connection (AWS ALB)	the client closed the connection before the ALB's idle timeout ran out
+463 Too Many Forwarded IPs (AWS ALB)	X-Forwarded-For held more than 30 addresses
+464 Incompatible Protocol (AWS ALB)	the request's protocol doesn't match the target group's protocol version, e.g. gRPC to an HTTP/1.1 group
+561 Unauthorized (AWS ALB)	the identity provider returned an error during ALB authentication
+520 Unknown Error (Cloudflare)	the origin sent something empty, unknown or unexpected
+521 Web Server Is Down (Cloudflare)	the origin refused the connection
+522 Connection Timed Out (Cloudflare)	the TCP connection to the origin timed out
+523 Origin Is Unreachable (Cloudflare)	no route to the origin, often bad DNS
+524 A Timeout Occurred (Cloudflare)	connected to the origin, but it didn't answer in time
+525 SSL Handshake Failed (Cloudflare)	the TLS handshake with the origin failed
+526 Invalid SSL Certificate (Cloudflare)	the origin's certificate failed validation in Full (strict) mode
+HTTP
+  } | deal http)
+  [ -n "$text" ] || return 1
   item "" http "${y}${text%%$'\t'*}${n} ${text#*$'\t'}"
 }
+
 
 # Cached daily in the background: outdated brew formulae and Flatpak updates.
 updates() {
@@ -343,7 +465,7 @@ tip_lesson() {
   lesson=$(cut -f1 "$f" 2>/dev/null | sort -u | pick)
   [ -n "$lesson" ] || return 1
   kind=$(awk -F'\t' -v l="$lesson" '$1 == l { print $2 }' "$f" | sort -u | pick)
-  entry=$(awk -F'\t' -v l="$lesson" -v k="$kind" '$1 == l && $2 == k' "$f" | pick)
+  entry=$(awk -F'\t' -v l="$lesson" -v k="$kind" '$1 == l && $2 == k' "$f" | deal lessons)
   [ -n "$entry" ] || return 1
   IFS=$'\t' read -r lesson kind path desc <<<"$entry"
   grep -qi 'deprecated' <<<"$desc" && return 1
@@ -354,7 +476,7 @@ tip_lesson() {
 # A random field from the cached CRDs of $3.
 tip_crd() {
   local icon=$1 label=$2 entry kind path desc
-  entry=$(cat "$crd_dir/$3.tsv" 2>/dev/null | pick)
+  entry=$(cat "$crd_dir/$3.tsv" 2>/dev/null | deal "crd-$3")
   [ -n "$entry" ] || return 1
   IFS=$'\t' read -r kind path desc <<<"$entry"
   grep -qi 'deprecated' <<<"$desc" && return 1
@@ -365,7 +487,7 @@ tip_crd() {
 # A PromQL idiom worth knowing.
 tip_promql() {
   local entry expr what
-  entry=$(grep -v '^$' <<'PROMQL' | pick
+  entry=$(grep -v '^$' <<'PROMQL' | deal promql
 rate(http_requests_total[5m])	per-second average over 5m; use on counters, it handles resets
 irate(http_requests_total[5m])	instant rate from the last two samples; for spiky graphs, not alerts
 increase(http_requests_total[1h])	how much a counter grew in an hour; rate × range, extrapolated
@@ -391,6 +513,47 @@ count by (version) (kube_node_info)	how many nodes run each kubelet version
 sum without (instance) (rate(x[5m]))	aggregate away one label, keep the rest
 deriv(node_memory_MemAvailable_bytes[30m])	per-second slope of a gauge; rate is for counters only
 x @ end()	pin a query to the end of the graph range
+sum(rate(http_requests_total{code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))	error ratio; the core of most SLO alerts
+1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))	CPU busy fraction per host
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes	free memory fraction; Available, not Free, counts reclaimable cache
+container_memory_working_set_bytes	what the kubelet compares with limits for OOM and eviction, not RSS
+rate(container_cpu_cfs_throttled_periods_total[5m]) / rate(container_cpu_cfs_periods_total[5m])	CPU throttling ratio; high with low usage means the limit is too tight
+sum by (namespace) (kube_pod_container_resource_requests{resource="cpu"})	CPU requested per namespace
+kube_pod_status_phase{phase="Pending"} == 1	pods stuck Pending
+kube_deployment_status_replicas_available / kube_deployment_spec_replicas	fraction of desired replicas available
+max by (pod) (kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"})	pods in CrashLoopBackOff
+kube_node_status_condition{condition="Ready", status="true"} == 0	NotReady nodes
+increase(kube_pod_container_status_restarts_total[15m]) > 0	containers that restarted recently
+kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes	PVC free space
+rate(apiserver_request_total{code=~"5.."}[5m])	API server errors
+histogram_quantile(0.99, sum by (le, verb) (rate(apiserver_request_duration_seconds_bucket[5m])))	API server p99 latency per verb
+sum(rate(x_sum[5m])) / sum(rate(x_count[5m]))	average from a histogram or summary
+sum(rate(x_bucket{le="0.3"}[5m])) / sum(rate(x_count[5m]))	fraction of requests under 300ms; needs that exact bucket
+histogram_quantile(0.9, sum(rate(x[5m])))	the same on a native histogram: no le label, no _bucket suffix
+histogram_count(rate(x[5m]))	request rate from a native histogram
+sum(x) or vector(0)	show 0 instead of no data when nothing matches
+absent_over_time(up{job="x"}[10m])	the series has been gone for 10 minutes
+last_over_time(x[1h])	the latest sample in the last hour, even if the series stopped
+time() - process_start_time_seconds	process uptime in seconds
+probe_success == 0	blackbox exporter probes failing
+probe_ssl_earliest_cert_expiry - time() < 86400 * 14	certificates expiring within two weeks
+stddev_over_time(x[1h])	how noisy a gauge is
+bottomk(5, x)	the five smallest series
+count_values("version", kubelet_version_info)	count series per label value of the result
+group by (namespace) (kube_pod_info)	just the label sets, value 1; cheap for joins
+sort_desc(sum by (pod) (rate(container_network_receive_bytes_total[5m])))	busiest pods by network receive
+delta(node_hwmon_temp_celsius[1h])	change in a gauge over a range; increase is for counters
+count by (__name__) ({job="x"})	series per metric for one job: find cardinality
+{__name__=~"node_.*"}	select by metric name with a regex
+scrape_samples_scraped	samples per scrape per target; spikes mean a cardinality jump
+prometheus_tsdb_head_series	active series in Prometheus; memory follows it
+rate(x[$__rate_interval])	Grafana's interval that's always at least four scrapes
+round(x, 0.1)	round to the nearest 0.1
+a and b	series in a that also exist in b
+x > 0 unless on (pod) kube_pod_status_phase{phase="Succeeded"} == 1	filter out finished pods
+level:metric:operations	recording rule naming, e.g. job:http_requests:rate5m
+for: 5m	an alert rule waits 5 minutes Pending before Firing
+keep_firing_for: 10m	holds an alert Firing after the condition clears, stops flapping
 PROMQL
 )
   [ -n "$entry" ] || return 1
