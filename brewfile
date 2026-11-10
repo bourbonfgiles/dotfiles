@@ -70,7 +70,7 @@ brew "awscli"
 brew "awscli-local"
 brew "aws-vault"
 brew "iann0036/iamlive/iamlive"
-brew "azure-cli"
+cask "azure-cli"
 brew "azure/kubelogin/kubelogin"
 brew "powershell"
 

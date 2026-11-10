@@ -185,3 +185,6 @@ kube-down() {
 # Secrets (untracked)
 [[ -f "$HOME/.zshrc.secrets" ]] && source "$HOME/.zshrc.secrets"
 export PATH="$HOME/.local/bin:$HOME/bin:${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+# Tips and status in a new Ghostty window, at most hourly; `motd -f` any time
+[[ $TERM_PROGRAM == ghostty && $SHLVL == 1 ]] && motd

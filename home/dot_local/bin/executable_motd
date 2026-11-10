@@ -1,0 +1,481 @@
+#!/usr/bin/env bash
+# Terminal tips and status. `motd` shows it at most hourly; `motd -f` forces.
+set -u
+
+ctx=k3d-dev
+cache=${XDG_CACHE_HOME:-$HOME/.cache}/motd
+tldr_pages=$(tldr --info 2>/dev/null | sed -n 's/^Cache: \(.*\) (.*/\1/p')/pages.en
+platform=linux; [ "$(uname)" = Darwin ] && platform=osx
+mkdir -p "$cache"
+export MANROFFOPT=-rHY=0
+
+if [ "${1:-}" != -f ] && [ -n "$(find "$cache/shown" -mmin -60 2>/dev/null)" ]; then
+  exit 0
+fi
+touch "$cache/shown"
+
+b=$'\e[1m' d=$'\e[2m' n=$'\e[0m' c=$'\e[36m' y=$'\e[33m' r=$'\e[31m' g=$'\e[32m'
+cols=$(tput cols 2>/dev/null || echo 100)
+[ "$cols" -gt 110 ] && cols=110
+width=$((cols - 18))
+
+# Pages too basic or irrelevant to be worth a tip.
+skip='kubectl-(scale|version|completion|krew|cluster-info|api-versions)|podman-(image-load|images|ps|pull)|systemctl-(help|halt|poweroff|reboot|emergency|rescue|isolate|kexec|exit|hibernate|hybrid-sleep|suspend.*)'
+
+pick() { awk -v s="$RANDOM" 'BEGIN{srand(s)} {a[NR]=$0} END{if (NR) print a[int(rand()*NR)+1]}'; }
+try() { for _ in 1 2 3 4 5; do "$@" && return 0; done; return 1; }
+dashes() { [ "$1" -gt 0 ] && printf '─%.0s' $(seq "$1"); }
+
+section() { printf "${d}├─${n} ${b}%s${n} ${d}%s${n}\n" "$1" "$(dashes $((cols - ${#1} - 4)))"; }
+# │  icon label      text  source
+item() { printf "${d}│${n}  ${b}${c}%s %-11s${n}%s ${d}%s${n}\n" "$1" "$2" "$3" "${4:-}"; }
+body() { fold -s -w "$width" | sed "s/^/${d}│${n}                 /"; }
+cmd() { printf "${d}│${n}                 ${y}\$ %s${n}\n" "$1"; }
+divider() { printf "${d}├%s${n}\n" "$(dashes $((cols - 1)))"; }
+gap() { printf "${d}│${n}\n"; }
+# First sentences, up to ~300 characters.
+sentences() { tr -s ' \t' ' ' | sed 's/‐ //g' | sed -E 's/ More info: .*//; s/ Possible enum values:.*//' | cut -c1-300 | sed -E 's/^(.*[.]) .*/\1/; s/ +$//'; }
+
+# Two examples from a random tldr page whose name matches $3 (ERE).
+tip_tldr() {
+  local icon=$1 label=$2 page f
+  page=$(ls "$tldr_pages"/common "$tldr_pages/$platform" 2>/dev/null | sed -n 's/\.md$//p' \
+    | grep -E "^($3)$" | grep -vE "^($skip)$" | pick)
+  [ -n "$page" ] || return 1
+  f=$(ls "$tldr_pages/$platform/$page.md" "$tldr_pages/common/$page.md" 2>/dev/null | head -1)
+  grep -q 'This command is an alias of' "$f" && return 1
+  awk -v s="$RANDOM" '
+    BEGIN { srand(s) }
+    /^> / && !sum && !/More information/ { sum = substr($0, 3); next }
+    /^- / { desc = substr($0, 3); sub(/:$/, "", desc); next }
+    /^`tldr / || /^`.* help`$/ { next }
+    /^`/  { cmd = $0; gsub(/^`|`$/, "", cmd); gsub(/\{\{|\}\}/, "", cmd); n++; D[n] = desc; C[n] = cmd }
+    END   {
+      if (n < 1) exit 1
+      i = int(rand() * n) + 1; j = int(rand() * n) + 1
+      if (n > 1) while (j == i) j = int(rand() * n) + 1
+      if (j < i) { t = i; i = j; j = t }
+      print sum; print D[i]; print C[i]
+      if (n > 1) { print D[j]; print C[j] }
+    }
+  ' "$f" | {
+    read -r summary || exit 1
+    item "$icon" "$label" "${y}${page//-/ }${n}" "tldr $page"
+    printf '%s\n' "$summary" | body
+    while read -r desc && read -r command; do
+      printf '%s\n' "$desc" | body
+      cmd "$command"
+    done
+  }
+}
+
+# A random key from a man page, explained by its first paragraph there.
+# $1 icon, $2 label, $3 index page, $4 awk regex for "key page" pairs or keys.
+man_entry() {
+  local key=$1 page=$2 text
+  text=$(MANWIDTH=200 man "$page" 2>/dev/null | col -b | awk -v k="$key" '
+    index($0, k) && $0 ~ "^ +" k && !on { on = 1; next }
+    on && /^ *$/ { if (got) exit; next }
+    on { sub(/^ +/, ""); printf "%s ", $0; got = 1 }
+  ')
+  [ -n "$text" ] && printf '%s' "$text"
+}
+
+tip_directive() {
+  local entry key page text
+  entry=$(MANWIDTH=200 man systemd.directives 2>/dev/null | col -b | awk '
+    /^ +[A-Z][A-Za-z]+=$/ { k = $1; next }
+    k && /^ +systemd\.[a-z-]+\(5\)/ { print k, $1 }
+    { k = "" }
+  ' | pick)
+  [ -n "$entry" ] || return 1
+  key=${entry%% *} page=${entry#* }
+  text=$(man_entry "$key" "${page%%(*}") || return 1
+  item "" systemd "${y}${key}${n}" "man ${page}"
+  sentences <<<"$text" | body
+}
+
+tip_plist() {
+  local key text
+  key=$(MANWIDTH=200 man launchd.plist 2>/dev/null | col -b | awk '/^ +[A-Z][A-Za-z]+ <[a-z]+>/ { print $1 }' | pick)
+  [ -n "$key" ] || return 1
+  text=$(man_entry "$key <" launchd.plist) || return 1
+  item "" launchd "${y}${key}${n}" "man launchd.plist"
+  sentences <<<"$text" | body
+}
+
+# A random field from a cached `kubectl explain --recursive`, explained live.
+tip_explain() {
+  local paths=$cache/explain-paths path text
+  if [ -z "$(find "$paths" -mtime -1 2>/dev/null)" ]; then
+    for res in pod deployment statefulset service ingress networkpolicy \
+      poddisruptionbudget horizontalpodautoscaler job cronjob \
+      storageclass persistentvolumeclaim serviceaccount resourcequota limitrange; do
+      kubectl --context "$ctx" --request-timeout=2s explain "$res" --recursive 2>/dev/null | awk -v r="$res" '
+        /^FIELDS:/ { on = 1; next }
+        on && /^ +[a-zA-Z]/ { match($0, /^ +/); lvl = RLENGTH / 2; p[lvl] = $1
+          s = r; for (i = 1; i <= lvl; i++) s = s "." p[i]; print s }'
+    done > "$paths.new" && [ -s "$paths.new" ] && mv "$paths.new" "$paths"
+  fi
+  path=$(grep -E '^[a-z]+\.spec\.[^.]+(\.[^.]+)?$' "$paths" 2>/dev/null \
+    | grep -vE '\.(template\.spec|jobTemplate\.spec\.template)\.|\.metadata\.' | pick)
+  [ -n "$path" ] || return 1
+  text=$(kubectl --context "$ctx" --request-timeout=2s explain "$path" 2>/dev/null \
+    | awk '/^DESCRIPTION:/ { on = 1; next } on && /^[A-Z]+:/ { exit } on { sub(/^ +/, ""); printf "%s ", $0 }')
+  [ -n "$text" ] || return 1
+  grep -qi 'deprecated' <<<"$text" && return 1
+  item "󱃾" k8s "${y}${path}${n}" "kubectl explain"
+  sentences <<<"$text" | body
+}
+
+# A random bpftrace or bcc tool, with what it does and how to run it.
+tip_bpf() {
+  local tool desc run src
+  if [ $((RANDOM % 2)) = 0 ]; then
+    tool=$(ls /usr/share/bpftrace/tools/*.bt 2>/dev/null | pick)
+    [ -n "$tool" ] || return 1
+    desc=$(sed -n '2s|^// *[^[:space:]]*[[:space:]]*||p' "$tool" | sed 's/^- *//')
+    run="sudo bpftrace $tool" src="man $(basename "$tool")"
+  else
+    tool=$(find /usr/share/bcc/tools -maxdepth 1 -type f -perm -u+x 2>/dev/null | pick)
+    [ -n "$tool" ] || return 1
+    desc=$(man -f "bcc-$(basename "$tool")" 2>/dev/null | head -1 | sed 's/^.* - //')
+    run="sudo $tool" src="man bcc-$(basename "$tool")"
+  fi
+  [ -n "$desc" ] || return 1
+  item "" bpf "${y}$(basename "$tool")${n} $desc" "$src"
+  cmd "$run"
+}
+
+# A man page from sections 7 and 8 worth reading, with its description.
+tip_man() {
+  local pages entry sec page text
+  if [ "$platform" = linux ]; then
+    pages='7:cgroups 7:cgroup_namespaces 7:namespaces 7:user_namespaces 7:pid_namespaces
+      7:network_namespaces 7:mount_namespaces 7:time_namespaces 7:capabilities 7:credentials
+      7:bpf-helpers 7:sched 7:cpuset 7:epoll 7:inotify 7:fanotify 7:signal 7:socket 7:tcp 7:udp
+      7:ip 7:ipv6 7:netlink 7:rtnetlink 7:packet 7:unix 7:vsock 7:netdevice 7:path_resolution
+      7:symlink 7:vdso 7:futex 7:pipe 7:mq_overview 7:shm_overview 7:numa 7:hier
+      7:file-hierarchy 7:systemd.special 7:systemd.time 7:bootup 7:daemon 7:kernel-command-line
+      7:systemd.net-naming-scheme 7:systemd.journal-fields 7:systemd.syntax 7:systemd.offline-updates
+      8:tc-bpf 8:tc 8:tc-fq_codel 8:ip-netns 8:ip-route 8:ip-rule 8:ld.so 8:nft 8:cryptsetup
+      8:systemd-resolved 8:systemd-networkd 8:systemd-journald 8:systemd-oomd 8:systemd-udevd
+      8:kernel-install 8:bootup 8:mount 8:ss 8:tcpdump 8:sysctl 8:bpftool 8:ethtool'
+  else
+    pages='8:launchd 8:launchctl 8:syslogd 8:mDNSResponder 8:pfctl 8:fs_usage 8:sc_usage
+      8:nvram 8:kextstat 8:mount 8:sysctl 8:route 8:tcpdump 7:re_format 7:hier 7:security
+      1:dtrace 1:dtruss 1:sandbox-exec 1:log 1:codesign 1:spctl 1:nettop'
+  fi
+  entry=$(tr -s ' \n' '\n' <<<"$pages" | grep . | pick)
+  sec=${entry%%:*} page=${entry#*:}
+  man -w "$sec" "$page" >/dev/null 2>&1 || return 1
+  text=$(MANWIDTH=200 man "$sec" "$page" 2>/dev/null | col -b | awk '
+    /^DESCRIPTION/ { on = 1; next }
+    on && /^[A-Z]/ { exit }
+    on && /^ *$/ { if (got) exit; next }
+    on { sub(/^ +/, ""); printf "%s ", $0; got = 1 }')
+  [ -n "$text" ] || return 1
+  item "" man "${y}${page}(${sec})${n} $(man -f "$page" 2>/dev/null | grep -F "($sec" | head -1 | sed 's/^.* - //')" "man $sec $page"
+  sentences <<<"$text" | body
+}
+
+# A port worth knowing, and why.
+tip_port() {
+  local entry
+  entry=$(grep -v '^$' <<'PORTS' | pick
+22/tcp	SSH	SSM Session Manager means you can leave it closed on EC2
+53/udp+tcp	DNS	TCP for answers over 512 bytes and zone transfers (AXFR, RFC 2136 updates)
+123/udp	NTP	clock skew breaks TLS, Kerberos and etcd leases
+179/tcp	BGP	Cilium's BGP control plane peers with routers on it
+443/udp	HTTP/3 (QUIC)	same port as HTTPS, but UDP; firewalls often forget it
+25/tcp, 587/tcp	SMTP	AWS throttles outbound 25 on EC2; SES takes 587 with STARTTLS
+67-68/udp	DHCP	server and client; how most nodes get their address
+88/tcp+udp	Kerberos	Active Directory auth; clock skew over 5 minutes breaks it
+389/tcp, 636/tcp	LDAP, LDAPS	directory lookups; 636 is LDAP over TLS
+443/tcp	HTTPS	where EKS serves the Kubernetes API and ALBs listen
+500/udp, 4500/udp	IKE, IPsec NAT-T	AWS Site-to-Site VPN tunnels
+514/udp	syslog	plain-text logs; RFC 5425 moves it to TLS on 6514
+853/tcp	DNS over TLS	what your systemd-resolved uses to reach Cloudflare
+2375/tcp, 2376/tcp	Docker API	plain and TLS; an open 2375 is root on the host
+2049/tcp	NFS	what EFS mounts use; open it in the EFS security group
+2379-2380/tcp	etcd	client and peer; never expose them beyond the control plane
+3000/tcp	Grafana	default web UI
+3100/tcp	Loki	HTTP push and query API
+3306/tcp	MySQL	RDS and Aurora MySQL
+4240/tcp	cilium-health	node-to-node health checks
+4244/tcp	Hubble server	per-node flow API; Hubble Relay listens on 4245
+4317-4318/tcp	OTLP	OpenTelemetry gRPC and HTTP receivers
+4789/udp	VXLAN (IANA)	AWS VPC Traffic Mirroring and many overlays
+5000/tcp	registry	default port of the distribution (registry:2) image
+5432/tcp	PostgreSQL	RDS and Aurora PostgreSQL
+6081/udp	Geneve	Cilium and AWS Gateway Load Balancer tunnels
+6379/tcp	Redis	ElastiCache
+7946/tcp+udp	memberlist	gossip for Alertmanager, Loki and MetalLB clusters
+6443/tcp	kube-apiserver	k3s and kubeadm; EKS serves its endpoint on 443
+8472/udp	VXLAN (Linux)	the kernel default, used by Cilium and Flannel
+9090/tcp	Prometheus	web UI and API
+9093/tcp	Alertmanager	web UI and API
+9100/tcp	node-exporter	host metrics
+9200/tcp	OpenSearch	REST API; 9300 is node-to-node transport
+9418/tcp	git	the unauthenticated git:// protocol
+9901/tcp	Envoy admin	stats and config dump; keep it on localhost
+9443/tcp	webhooks	controller-runtime's default admission webhook port; must be open from the control plane
+10250/tcp	kubelet	logs, exec and metrics-server use it; the EKS control plane must reach it
+10257/tcp, 10259/tcp	controller-manager, scheduler	secure health and metrics ports
+11211/tcp	memcached	ElastiCache; never expose it, it amplifies UDP attacks
+16686/tcp	Jaeger UI	trace search
+10256/tcp	kube-proxy	health check port load balancers probe
+25565/tcp	Minecraft	Java edition server
+30000-32767/tcp	NodePort	default Service NodePort range
+32768-60999/tcp	ephemeral	Linux's default source port range (net.ipv4.ip_local_port_range); NACLs must allow it back
+51820/udp	WireGuard	Cilium transparent encryption
+PORTS
+)
+  [ -n "$entry" ] || return 1
+  IFS=$'\t' read -r port name why <<<"$entry"
+  item "" port "${y}${port}${n} ${b}${name}${n} · $why"
+}
+
+# An HTTP status code with Python's description of it.
+tip_http() {
+  local text
+  text=$(python3 -I -c '
+import http, random
+s = random.choice(list(http.HTTPStatus))
+print(f"{s.value} {s.phrase}\t{s.description}")' 2>/dev/null) || return 1
+  item "" http "${y}${text%%$'\t'*}${n} ${text#*$'\t'}"
+}
+
+# Cached daily in the background: outdated brew formulae and Flatpak updates.
+updates() {
+  local f=$cache/updates
+  if [ -z "$(find "$f" -mtime -1 2>/dev/null)" ]; then
+    (
+      {
+        command -v brew >/dev/null && printf 'brew %s\n' "$(brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')"
+        command -v flatpak >/dev/null && printf 'flatpak %s\n' "$(flatpak remote-ls --updates --app 2>/dev/null | wc -l | tr -d ' ')"
+      } > "$f.new" && mv "$f.new" "$f"
+    ) >/dev/null 2>&1 &
+  fi
+  [ -s "$f" ] || { item "" updates "${d}checking…${n}"; return; }
+  local s="" total=0 tool num
+  while read -r tool num; do
+    s="$s${s:+ · }$tool $num"; total=$((total + num))
+  done < "$f"
+  if [ "$total" = 0 ]; then s="${g}●${n} $s"; else s="${y}●${n} $s"; fi
+  item "" updates "$s ${d}(checked $(date -r "$f" '+%a %H:%M'))${n}"
+}
+
+# CRD field descriptions, cached weekly in the background: upstream CRDs for
+# tools not on the cluster, the cluster's own CRDs for the rest.
+crd_dir=$cache/crd
+crd_jq='
+def fields($p; $depth):
+  (.properties // {}) | to_entries[] | .key as $key |
+  ([$p + "." + $key, ((.value.description // "") | gsub("\\s+"; " "))]),
+  (if $depth < 3 then (.value | (.items // .) | fields($p + "." + $key; $depth + 1)) else empty end);
+select(.kind == "CustomResourceDefinition")
+| .spec.names.kind as $k
+| (.spec.versions[] | select(.storage) | .schema.openAPIV3Schema.properties.spec)
+| fields("spec"; 1) | select(.[1] != "") | [$k, .[0], .[1]] | @tsv'
+
+crd_upstream() {
+  local name=$1; shift
+  for url in "$@"; do curl -fsSL --max-time 30 "$url" || return 1; echo '---'; done \
+    | yq -o=json -I=0 '.' | jq -r "$crd_jq" > "$crd_dir/$name.tsv.new" \
+    && [ -s "$crd_dir/$name.tsv.new" ] && mv "$crd_dir/$name.tsv.new" "$crd_dir/$name.tsv"
+}
+
+crd_cluster() {
+  kubectl --context "$ctx" --request-timeout=5s get crd -o json 2>/dev/null \
+    | jq -c --arg g "$2" '.items[] | select(.spec.group | test($g))' \
+    | jq -r "$crd_jq" | grep -vE "^(${3:-^$})\b" > "$crd_dir/$1.tsv.new" \
+    && [ -s "$crd_dir/$1.tsv.new" ] && mv "$crd_dir/$1.tsv.new" "$crd_dir/$1.tsv"
+}
+
+# CRDs of the charts kube_local's lessons install, at the versions they pin,
+# from each lesson's "Example only" helm command. Lesson 02 is Flux, which has
+# its own item. Output: lesson<TAB>Kind<TAB>path<TAB>description.
+crd_lessons() {
+  local docs=$HOME/repos/personal/kube_local/docs f lesson release chart repo version
+  [ -d "$docs" ] || return
+  for f in "$docs"/[0-9][0-9]-*.md; do
+    lesson=$(basename "$f" .md)
+    case $lesson in 02-*) continue ;; esac
+    # Join continued lines, then pull release, chart, --repo and --version.
+    sed -e ':a' -e '/\\$/N; s/\\\n *//; ta' "$f" \
+      | awk '/^helm .*upgrade --install / && /--version/ {
+          for (i = 1; i <= NF; i++) {
+            if ($i == "--install") { rel = $(i + 1); ch = $(i + 2) }
+            if ($i == "--repo") repo = $(i + 1)
+            if ($i == "--version") ver = $(i + 1)
+          }
+          print rel, ch, (repo ? repo : "-"), ver; repo = "" }' \
+      | while read -r release chart repo version; do
+          helm template "$release" "$chart" ${repo:+$( [ "$repo" != - ] && echo --repo "$repo")} \
+            --version "$version" --include-crds --set crds.enabled=true 2>/dev/null \
+            | yq -o=json -I=0 '.' 2>/dev/null | jq -r "$crd_jq" 2>/dev/null \
+            | sed "s/^/${lesson}\t/"
+        done
+  done | grep -vE "$(printf '\t')(AzureChaos|GCPChaos|PhysicalMachine|PhysicalMachineChaos|PodHttpChaos|PodIOChaos|PodNetworkChaos|WorkflowNode|RemoteCluster)$(printf '\t')" \
+    | sort -u > "$crd_dir/lessons.tsv.new" \
+    && [ -s "$crd_dir/lessons.tsv.new" ] && mv "$crd_dir/lessons.tsv.new" "$crd_dir/lessons.tsv"
+}
+
+crd_refresh() {
+  mkdir -p "$crd_dir"
+  [ -n "$(find "$crd_dir/.refreshed" -mtime -7 2>/dev/null)" ] && return
+  touch "$crd_dir/.refreshed"
+  (
+    gh=https://raw.githubusercontent.com
+    crd_upstream argocd $gh/argoproj/argo-cd/stable/manifests/crds/{application,appproject}-crd.yaml
+    crd_lessons
+    crd_cluster flux 'toolkit\.fluxcd\.io$'
+    crd_cluster gateway '^gateway\.networking\.k8s\.io$'
+    crd_cluster cilium '^cilium\.io$' 'CiliumEndpoint|CiliumIdentity|CiliumNode'
+  ) >/dev/null 2>&1 &
+}
+
+# A random CRD field from a lesson's chart, at the version the lesson pins.
+tip_lesson() {
+  local f=$crd_dir/lessons.tsv entry lesson kind path desc
+  # Lesson, then kind, then field, so big charts don't crowd out small ones.
+  lesson=$(cut -f1 "$f" 2>/dev/null | sort -u | pick)
+  [ -n "$lesson" ] || return 1
+  kind=$(awk -F'\t' -v l="$lesson" '$1 == l { print $2 }' "$f" | sort -u | pick)
+  entry=$(awk -F'\t' -v l="$lesson" -v k="$kind" '$1 == l && $2 == k' "$f" | pick)
+  [ -n "$entry" ] || return 1
+  IFS=$'\t' read -r lesson kind path desc <<<"$entry"
+  grep -qi 'deprecated' <<<"$desc" && return 1
+  item "󰑴" "${lesson#*-}" "${y}${kind}${n} ${b}${path}${n}" "lesson ${lesson%%-*}"
+  sentences <<<"$desc" | body
+}
+
+# A random field from the cached CRDs of $3.
+tip_crd() {
+  local icon=$1 label=$2 entry kind path desc
+  entry=$(cat "$crd_dir/$3.tsv" 2>/dev/null | pick)
+  [ -n "$entry" ] || return 1
+  IFS=$'\t' read -r kind path desc <<<"$entry"
+  grep -qi 'deprecated' <<<"$desc" && return 1
+  item "$icon" "$label" "${y}${kind}${n} ${b}${path}${n}" "$3 CRD"
+  sentences <<<"$desc" | body
+}
+
+# A PromQL idiom worth knowing.
+tip_promql() {
+  local entry expr what
+  entry=$(grep -v '^$' <<'PROMQL' | pick
+rate(http_requests_total[5m])	per-second average over 5m; use on counters, it handles resets
+irate(http_requests_total[5m])	instant rate from the last two samples; for spiky graphs, not alerts
+increase(http_requests_total[1h])	how much a counter grew in an hour; rate × range, extrapolated
+sum by (job) (rate(http_requests_total[5m]))	rate first, then sum; summing counters before rate breaks on resets
+histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))	p95 latency; keep the le label through the sum
+topk(5, sum by (pod) (rate(container_cpu_usage_seconds_total[5m])))	five busiest pods by CPU
+absent(up{job="node"})	returns 1 when the series is missing; alert on it, since up == 0 can't fire if there's no up
+up == 0	targets Prometheus can't scrape
+predict_linear(node_filesystem_avail_bytes[6h], 24 * 3600) < 0	disk full within a day, from the last 6 hours' trend
+avg_over_time(node_load1[1h])	average of a gauge over a range
+quantile_over_time(0.99, some_gauge[1h])	p99 of a gauge over time, not across series
+changes(kube_pod_container_status_restarts_total[1h])	how often a value changed; good for flapping
+resets(process_start_time_seconds[1d])	counter resets, i.e. restarts
+rate(x[5m]) offset 1w	the same query a week ago; compare with the current value
+max_over_time(rate(x[1m])[1h:1m])	a subquery: the worst 1m rate in the last hour, evaluated every 1m
+a / on (instance) b	match only on instance when the label sets differ
+a * on (pod) group_left (node) kube_pod_info	copy the node label onto a from kube_pod_info
+a unless b	series in a with no matching series in b
+x > bool 100	returns 0 or 1 instead of filtering
+label_replace(up, "host", "$1", "instance", "(.*):.*")	derive a label with a regex
+clamp_min(x, 0)	floor negative values, e.g. from counter math
+count by (version) (kube_node_info)	how many nodes run each kubelet version
+sum without (instance) (rate(x[5m]))	aggregate away one label, keep the rest
+deriv(node_memory_MemAvailable_bytes[30m])	per-second slope of a gauge; rate is for counters only
+x @ end()	pin a query to the end of the graph range
+PROMQL
+)
+  [ -n "$entry" ] || return 1
+  IFS=$'\t' read -r expr what <<<"$entry"
+  item "" promql "${y}${expr}${n}"
+  printf '%s\n' "$what" | body
+}
+
+count() { [ -n "$1" ] && wc -l <<<"$1" | tr -d ' ' || echo 0; }
+
+status() {
+  local failed ufailed img uupd nodes ready flux fready s dot
+  if command -v systemctl >/dev/null; then
+    failed=$(systemctl list-units --failed --plain --no-legend 2>/dev/null | awk '{print $1}' | paste -sd' ' -)
+    ufailed=$(systemctl --user list-units --failed --plain --no-legend 2>/dev/null | awk '{print $1}' | paste -sd' ' -)
+    if [ -z "$failed$ufailed" ]; then s="${g}●${n} no failed units"
+    else s="${r}●${n} failed: ${failed}${ufailed:+ (user) $ufailed}"; fi
+    uupd=$(systemctl show uupd.service -p Result --value 2>/dev/null)
+    [ -n "$uupd" ] && [ "$uupd" != success ] && s="$s  ${r}●${n} last update run: $uupd"
+    item "" systemd "$s"
+  fi
+  if command -v rpm-ostree >/dev/null; then
+    img=$(rpm-ostree status --json 2>/dev/null | jq -r '
+      (first(.deployments[] | select(.booted)) | ."container-image-reference-digest" // .checksum)[7:15] as $b
+      | (first(.deployments[] | select(.staged)) // {} | ."container-image-reference-digest" // "")[7:15] as $s
+      | if $s != "" then "\u001b[33m●\u001b[0m \($b), \($s) staged: reboot to apply"
+        else "\u001b[32m●\u001b[0m \($b), up to date" end' 2>/dev/null)
+    [ -n "$img" ] && item "" image "$img"
+  fi
+  if kubectl config get-contexts "$ctx" >/dev/null 2>&1; then
+    nodes=$(kubectl --context "$ctx" --request-timeout=1s get nodes --no-headers 2>/dev/null)
+    if [ -z "$nodes" ]; then item "󱃾" "$ctx" "${d}○ stopped${n}"; return; fi
+    ready=$(grep -cw Ready <<<"$nodes")
+    flux=$(kubectl --context "$ctx" --request-timeout=1s get kustomizations.kustomize.toolkit.fluxcd.io,helmreleases.helm.toolkit.fluxcd.io -A \
+      -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}' 2>/dev/null)
+    fready=$(grep -c True <<<"$flux")
+    dot=$g
+    [ "$ready" = "$(count "$nodes")" ] && [ "$fready" = "$(count "$flux")" ] || dot=$r
+    s="${dot}●${n} nodes $ready/$(count "$nodes") Ready"
+    [ -n "$flux" ] && s="$s · Flux $fready/$(count "$flux") Ready"
+    item "󱃾" "$ctx" "$s"
+  fi
+}
+
+title="$(date '+%a %d %b %H:%M') · $(hostname -s)"
+[ "$platform" = linux ] && title="$title · $(uptime -p)"
+printf "${d}╭─${n} ${b}%s${n} ${d}%s${n}\n" "$title" "$(dashes $((cols - ${#title} - 4)))"
+
+section status
+status
+updates
+
+crd_refresh
+
+divider
+try tip_port; gap
+try tip_http; gap
+if [ "$platform" = linux ]; then
+  try tip_tldr "" linux 'ss|ip-.*|lsof|strace|pactl|wpctl|nmcli.*|findmnt|lsblk|pgrep|dmesg|taskset|ionice|sysctl|ethtool|tc|nft|mokutil|rpm-ostree.*|bootc.*|flatpak|udisksctl|cryptsetup.*|btrfs-.*|chrt|dig|tcpdump|getent|setfacl|ldd|readelf|nsenter|unshare|ip|perf|bpftool'; gap
+else
+  try tip_tldr "" macos 'defaults|diskutil|pmset|scutil|networksetup|log|mdfind|mdutil|caffeinate|softwareupdate|tmutil|codesign|spctl|xattr|system_profiler|sysctl|dtrace|vm_stat|powermetrics|ditto|hdiutil|security|nettop|route|csrutil|lsof|dig|tcpdump'; gap
+fi
+try tip_tldr "" container 'podman-.*|skopeo|buildah.*|crictl|k3d.*|cosign|nerdctl|dive|ctr'; gap
+if [ "$platform" = linux ]; then
+  { [ $((RANDOM % 2)) = 0 ] && try tip_directive; } \
+    || try tip_tldr "" systemd 'systemctl-.*|journalctl|systemd-.*|networkctl|resolvectl|busctl|coredumpctl|loginctl|hostnamectl|timedatectl|bootctl|udevadm'
+else
+  { [ $((RANDOM % 2)) = 0 ] && try tip_plist; } \
+    || try tip_tldr "" launchd 'launchctl|launchd|plutil'
+fi
+gap
+# One in six AWS tips is EKS; the rest are any service.
+if [ $((RANDOM % 6)) = 0 ]; then try tip_tldr "" aws 'aws-eks|eksctl'; else try tip_tldr "" aws 'aws|aws-.*'; fi
+
+gap
+{ [ $((RANDOM % 2)) = 0 ] && try tip_explain; } \
+  || try tip_tldr "󱃾" k8s 'kubectl-.*|helm.*|kustomize|kubeconform|stern|kubectx|kubens'; gap
+if [ $((RANDOM % 2)) = 0 ]; then try tip_crd "󰛳" gateway gateway; else try tip_crd "󰛳" cilium cilium; fi && gap
+{ [ $((RANDOM % 3)) != 0 ] && try tip_crd "" flux flux; } || try tip_tldr "" flux 'flux-.*'; gap
+{ [ $((RANDOM % 3)) != 0 ] && try tip_crd "" argocd argocd; } || try tip_tldr "" argocd 'argocd.*'; gap
+try tip_lesson && gap
+try tip_promql
+
+gap
+try tip_man
+[ "$platform" = linux ] && { gap; try tip_bpf; }
+
+printf "${d}╰─${n}\n"
